@@ -6,51 +6,19 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useToast } from "@/contexts/toast-context";
 import { Workflow, Sun, Moon, Eye, EyeOff } from "lucide-react";
-import { useEffect } from "react";
 import { CustomCard, CustomCardContent, CustomCardDescription, CustomCardFooter, CustomCardHeader, CustomCardTitle } from "@/components/ui/CustomCard";
 import { CustomInput } from "@/components/ui/CustomInput";
 import { CustomButton } from "@/components/ui/CustomButton";
 
 export function LoginPage() {
-   const router = useRouter();
-   const { theme, setTheme } = useTheme();
-   const { addToast } = useToast();
-   const [loading, setLoading] = useState(false);
-   const [showPassword, setShowPassword] = useState(false);
-   const [formData, setFormData] = useState({
-      email: "",
-      password: "",
-      remember: false,
-   });
-   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-
-   useEffect(() => {
-      //  setMounted(true);
-   }, []);
-
-   const validateForm = () => {
-      const newErrors: { email?: string; password?: string } = {};
-
-      if (!formData.email) {
-         newErrors.email = "E-mail é obrigatório";
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-         newErrors.email = "E-mail inválido";
-      }
-
-      if (!formData.password) {
-         newErrors.password = "Senha é obrigatória";
-      } else if (formData.password.length < 6) {
-         newErrors.password = "Senha deve ter pelo menos 6 caracteres";
-      }
-
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
-   };
+   const router = useRouter()
+   const { theme, setTheme } = useTheme()
+   const { addToast } = useToast()
+   const [loading, setLoading] = useState(false)
+   const [showPassword, setShowPassword] = useState(false)
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-
-      if (!validateForm()) return;
 
       setLoading(true);
 
@@ -60,7 +28,6 @@ export function LoginPage() {
          type: "success",
       });
 
-      router.push("/dashboard");
    };
 
    return (
@@ -99,9 +66,6 @@ export function LoginPage() {
                      label="E-mail"
                      type="email"
                      placeholder="seu@email.com"
-                     value={formData.email}
-                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                     error={errors.email}
                   />
 
                   <div className="relative">
@@ -109,9 +73,6 @@ export function LoginPage() {
                         label="Senha"
                         type={showPassword ? "text" : "password"}
                         placeholder="Sua senha"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        error={errors.password}
                      />
                      <button
                         type="button"
@@ -126,8 +87,6 @@ export function LoginPage() {
                      <label className="flex items-center gap-2 cursor-pointer">
                         <input
                            type="checkbox"
-                           checked={formData.remember}
-                           onChange={(e) => setFormData({ ...formData, remember: e.target.checked })}
                            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
                         />
                         <span className="text-sm text-muted-foreground">Lembrar-me</span>
@@ -149,7 +108,7 @@ export function LoginPage() {
                   <p className="text-sm text-muted-foreground text-center">
                      Ainda não tem conta?{" "}
                      <Link
-                        href="/register"
+                        href="/auth/register"
                         className="text-primary hover:text-primary/80 font-medium transition-colors"
                      >
                         Cadastre-se

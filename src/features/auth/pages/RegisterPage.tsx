@@ -17,10 +17,15 @@ export function RegisterPage() {
    const { addToast } = useToast();
    const [loading, setLoading] = useState(false);
    const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
 
+
+      setLoading(true);
+      
       addToast({
          title: "Cadastro realizado com sucesso!",
          message: "Você já pode fazer login",
@@ -97,10 +102,12 @@ export function RegisterPage() {
                   <div className="relative">
                      <CustomInput
                         label="Confirmar senha"
+                        type={showConfirmPassword ? "text" : "password"}
                         placeholder="Repita a senha"
                      />
                      <button
                         type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-3 top-8.5 text-muted-foreground hover:text-foreground transition-colors"
                      >
                         {false ? (
