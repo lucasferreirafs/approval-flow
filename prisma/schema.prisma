@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["partialIndexes"]
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model departments {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                        String                        @unique @db.VarChar(255)
+  description                 String?
+  created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  color                       String?                       @db.VarChar(7)
+  tasks                       tasks[]
+  user_approvable_departments user_approvable_departments[]
+  users                       users[]
+}
+
+model notifications {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String            @db.Uuid
+  title      String            @db.VarChar(255)
+  message    String
+  read       Boolean           @default(false)
+  created_at DateTime          @default(now()) @db.Timestamptz(6)
+  type       notification_type @default(info)
+  users      users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_notifications_user_unread", where: raw("(read = false)"))
+}
+
+model task_history {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  task_id   String      @db.Uuid
+  action    task_action
+  date      DateTime    @default(now()) @db.Timestamptz(6)
+  user_id   String?     @db.Uuid
+  user_name String      @db.VarChar(255)
+  comment   String?
+  tasks     tasks       @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users     users?      @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+
+  @@index([task_id], map: "idx_task_history_task")
+}
+
+model tasks {
+  id                             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                          String         @db.VarChar(255)
+  description                    String
+  department_id                  String?        @db.Uuid
+  status                         task_status    @default(pendente)
+  created_by                     String         @db.Uuid
+  created_at                     DateTime       @default(now()) @db.Timestamptz(6)
+  desired_date                   DateTime       @db.Date
+  approver_id                    String?        @db.Uuid
+  approved_at                    DateTime?      @db.Timestamptz(6)
+  rejected_at                    DateTime?      @db.Timestamptz(6)
+  rejection_reason               String?
+  updated_at                     DateTime       @default(now()) @db.Timestamptz(6)
+  task_history                   task_history[]
+  users_tasks_approver_idTousers users?         @relation("tasks_approver_idTousers", fields: [approver_id], references: [id], onUpdate: NoAction)
+  users_tasks_created_byTousers  users          @relation("tasks_created_byTousers", fields: [created_by], references: [id], onUpdate: NoAction)
+  departments                    departments?   @relation(fields: [department_id], references: [id], onUpdate: NoAction)
+
+  @@index([approver_id], map: "idx_tasks_approver_id")
+  @@index([created_by], map: "idx_tasks_created_by")
+  @@index([department_id], map: "idx_tasks_department")
+  @@index([status], map: "idx_tasks_status")
+}
+
+model user_approvable_departments {
+  user_id       String      @db.Uuid
+  department_id String      @db.Uuid
+  departments   departments @relation(fields: [department_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, department_id])
+}
+
+model users {
+  id                             String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                           String                        @db.VarChar(255)
+  email                          String                        @unique @db.VarChar(255)
+  password_hash                  String                        @db.VarChar(255)
+  role                           user_role                     @default(colaborador)
+  department_id                  String?                       @db.Uuid
+  cargo                          String                        @db.VarChar(255)
+  avatar                         String?
+  is_approver                    Boolean                       @default(false)
+  email_notifications            Boolean                       @default(true)
+  push_notifications             Boolean                       @default(false)
+  notify_task_created            Boolean                       @default(true)
+  notify_task_approved           Boolean                       @default(true)
+  notify_task_rejected           Boolean                       @default(true)
+  created_at                     DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime                      @default(now()) @db.Timestamptz(6)
+  notifications                  notifications[]
+  task_history                   task_history[]
+  tasks_tasks_approver_idTousers tasks[]                       @relation("tasks_approver_idTousers")
+  tasks_tasks_created_byTousers  tasks[]                       @relation("tasks_created_byTousers")
+  user_approvable_departments    user_approvable_departments[]
+  departments                    departments?                  @relation(fields: [department_id], references: [id], onUpdate: NoAction)
+
+  @@index([department_id], map: "idx_users_department")
+  @@index([email], map: "idx_users_email")
+}
+
+enum notification_type {
+  info
+  success
+  warning
+  error
+}
+
+enum task_action {
+  criada
+  aprovada
+  rejeitada
+  editada
+  reenviada
+}
+
+enum task_status {
+  pendente
+  aprovada
+  rejeitada
+  concluida
+}
+
+enum user_role {
+  colaborador
+  aprovador
+  admin
+}
