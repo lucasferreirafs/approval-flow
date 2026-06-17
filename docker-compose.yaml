@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    container_name: app-approval-flow
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      WATCHPACK_POLLING: true
+      CHOKIDAR_USEPOLLING: true
+
+    command: npm run dev
+
+    depends_on:
+      - approval-flow
+
+  approval-flow:
+    image: postgres:17-alpine
+    container_name: database-approval-flow
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
