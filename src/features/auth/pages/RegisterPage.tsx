@@ -1,44 +1,60 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
-import { useToast } from "@/contexts/toast-context";
-import { Workflow, Sun, Moon, Eye, EyeOff } from "lucide-react";
-import { CustomCard, CustomCardContent, CustomCardDescription, CustomCardFooter, CustomCardHeader, CustomCardTitle } from "@/components/ui/CustomCard";
-import { CustomInput } from "@/components/ui/CustomInput";
-import { CustomButton } from "@/components/ui/CustomButton";
-import { CustomSelect } from "@/components/ui/custom-select";
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
+import { useToast } from "@/contexts/toast-context"
+import { Workflow, Sun, Moon, Eye, EyeOff } from "lucide-react"
+import { 
+   CustomCard, 
+   CustomCardContent, 
+   CustomCardDescription, 
+   CustomCardFooter, 
+   CustomCardHeader, 
+   CustomCardTitle 
+} from "@/components/ui/CustomCard"
+import { CustomInput } from "@/components/ui/CustomInput"
+import { CustomButton } from "@/components/ui/CustomButton"
+import { CustomSelect } from "@/components/ui/custom-select"
 
 export function RegisterPage() {
-   const router = useRouter();
-   const { theme, setTheme } = useTheme();
-   const { addToast } = useToast();
-   const [loading, setLoading] = useState(false);
-   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+   const router = useRouter()
+   const { theme, setTheme } = useTheme()
+   const { addToast } = useToast()
+   const [loading, setLoading] = useState(false)
+   const [showPassword, setShowPassword] = useState(false)
+   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+   const [departmentOptions, setDepartmentOptions] = useState<[]>([])
 
+   // Data
+   const [name, setName] = useState<string>("")
+   const [email, setEmail] = useState<string>("")
+   const [password, setPassword] = useState<string>("")
+   const [confirmPassword] = useState<string>("")
+   const [department, setDepartment] = useState<string>("")
+
+   const fetchDepartaments = async () => {
+      const res = await fetch("api/departament")
+   }
 
    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-
-
-      setLoading(true);
+      e.preventDefault()
+      setLoading(true)
       
       addToast({
          title: "Cadastro realizado com sucesso!",
          message: "Você já pode fazer login",
          type: "success",
-      });
-   };
+      })
+   }
 
-   const departmentOptions = [
-      { value: "TI", label: "Tecnologia da Informação" },
-      { value: "Financeiro", label: "Departamento Financeiro" },
-      { value: "RH", label: "Recursos Humanos" },
-      { value: "Marketing", label: "Marketing e Comunicação" },
-   ]
+   // const departmentOptions = [
+   //    { value: "TI", label: "Tecnologia da Informação" },
+   //    { value: "Financeiro", label: "Departamento Financeiro" },
+   //    { value: "RH", label: "Recursos Humanos" },
+   //    { value: "Marketing", label: "Marketing e Comunicação" },
+   // ]
 
    return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
@@ -131,7 +147,7 @@ export function RegisterPage() {
                   <p className="text-sm text-muted-foreground text-center">
                      Já tem uma conta?{" "}
                      <Link
-                        href="/auth/login"
+                        href="/login"
                         className="text-primary hover:text-primary/80 font-medium transition-colors"
                      >
                         Faça login

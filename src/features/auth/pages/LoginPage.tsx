@@ -27,7 +27,7 @@ export function LoginPage() {
          message: "Bem-vindo ao ApprovalFlow",
          type: "success",
       });
-
+      router.push("/dashboard");
    };
 
    return (
@@ -35,7 +35,7 @@ export function LoginPage() {
          {/* Theme toggle */}
          <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="absolute top-4 right-4 p-2 rounded-lg hover:bg-accent transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-accent transition-colors cursor-pointer"
             aria-label="Alternar tema"
          >
             {theme === "dark" ? (
@@ -108,7 +108,7 @@ export function LoginPage() {
                   <p className="text-sm text-muted-foreground text-center">
                      Ainda não tem conta?{" "}
                      <Link
-                        href="/auth/register"
+                        href="/register"
                         className="text-primary hover:text-primary/80 font-medium transition-colors"
                      >
                         Cadastre-se
