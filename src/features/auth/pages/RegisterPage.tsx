@@ -1,22 +1,37 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useToast } from "@/contexts/toast-context"
 import { Workflow, Sun, Moon, Eye, EyeOff } from "lucide-react"
-import { 
-   CustomCard, 
-   CustomCardContent, 
-   CustomCardDescription, 
-   CustomCardFooter, 
-   CustomCardHeader, 
-   CustomCardTitle 
+import {
+   CustomCard,
+   CustomCardContent,
+   CustomCardDescription,
+   CustomCardFooter,
+   CustomCardHeader,
+   CustomCardTitle
 } from "@/components/ui/CustomCard"
 import { CustomInput } from "@/components/ui/CustomInput"
 import { CustomButton } from "@/components/ui/CustomButton"
 import { CustomSelect } from "@/components/ui/custom-select"
+import { registerSchema } from "@/schemas/authentication.schema"
+
+
+interface DepartmentOptions {
+   id: string
+   value: string
+   label: string
+}
+
+interface Options {
+   id: string
+   name: string
+   description: string
+   color: string
+}
 
 export function RegisterPage() {
    const router = useRouter()
@@ -25,36 +40,98 @@ export function RegisterPage() {
    const [loading, setLoading] = useState(false)
    const [showPassword, setShowPassword] = useState(false)
    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-   const [departmentOptions, setDepartmentOptions] = useState<[]>([])
+   const [departmentOptions, setDepartmentOptions] = useState<DepartmentOptions[]>([])
 
    // Data
    const [name, setName] = useState<string>("")
    const [email, setEmail] = useState<string>("")
    const [password, setPassword] = useState<string>("")
-   const [confirmPassword] = useState<string>("")
+   const [confirmPassword, setConfirmPassword] = useState<string>("")
    const [department, setDepartment] = useState<string>("")
 
-   const fetchDepartaments = async () => {
-      const res = await fetch("api/departament")
-   }
+   useEffect(() => {
+      const fetchDepartments = async () => {
+         try {
+            const res = await fetch('/api/department')
+            const json = await res.json()
+
+            if (!json.success) {
+               throw new Error('Erro de requisição')
+            }
+
+            const { data } = json
+
+            const options = data.map((opt: Options) => ({
+               id: opt.id,
+               value: opt.name,
+               label: opt.description ?? opt.name,
+               color: opt.color,
+            }))
+
+            setDepartmentOptions(options)
+
+         } catch (error: unknown) {
+
+            if (error instanceof Error) {
+               console.log('Ops... Algo deu errado no servidor!')
+            }
+         }
+      }
+
+      fetchDepartments()
+   }, [])
 
    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
-      setLoading(true)
-      
-      addToast({
-         title: "Cadastro realizado com sucesso!",
-         message: "Você já pode fazer login",
-         type: "success",
-      })
-   }
 
-   // const departmentOptions = [
-   //    { value: "TI", label: "Tecnologia da Informação" },
-   //    { value: "Financeiro", label: "Departamento Financeiro" },
-   //    { value: "RH", label: "Recursos Humanos" },
-   //    { value: "Marketing", label: "Marketing e Comunicação" },
-   // ]
+      const result = registerSchema.safeParse({ name, email, password, confirmPassword, department })
+
+      if (!result.success) {
+         addToast({
+            title: 'Erro de validação',
+            message: result.error.issues[0].message,
+            type: 'error',
+         })
+         return
+      }
+
+      const selectedDepartment = departmentOptions.find((opt) => opt.value === department)
+
+      if (!selectedDepartment) {
+         addToast({ title: 'Erro', message: 'Departamento inválido', type: 'error' })
+         return
+      }
+
+      const { confirmPassword: _, ...rest } = result.data
+
+      setLoading(true)
+
+      try {
+         const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...rest, department: selectedDepartment.id }),
+         })
+
+         const json = await res.json()
+
+         if (!res.ok || !json.success) {
+            addToast({ title: 'Erro', message: json.message ?? 'Erro inesperado', type: 'error' })
+            return
+         }
+
+         router.push("/login")
+
+      } catch (error: unknown) {
+         addToast({
+            title: 'Erro',
+            message: error instanceof Error ? error.message : 'Erro inesperado',
+            type: 'error',
+         })
+      } finally {
+         setLoading(false)
+      }
+   }
 
    return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
@@ -92,12 +169,14 @@ export function RegisterPage() {
                      label="Nome completo"
                      type="text"
                      placeholder="Seu nome completo"
+                     onChange={(e) => setName(e.target.value)}
                   />
 
                   <CustomInput
                      label="E-mail"
                      type="text"
                      placeholder="seu@email.com"
+                     onChange={(e) => setEmail(e.target.value)}
                   />
 
                   <div className="relative">
@@ -105,6 +184,8 @@ export function RegisterPage() {
                         label="Senha"
                         type={showPassword ? "text" : "password"}
                         placeholder="Mínimo 6 caracteres"
+                        onChange={(e) => setPassword(e.target.value)}
+
                      />
                      <button
                         type="button"
@@ -120,6 +201,8 @@ export function RegisterPage() {
                         label="Confirmar senha"
                         type={showConfirmPassword ? "text" : "password"}
                         placeholder="Repita a senha"
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+
                      />
                      <button
                         type="button"
@@ -134,9 +217,17 @@ export function RegisterPage() {
                      </button>
                   </div>
 
-                  <CustomSelect
-                     options={departmentOptions}
-                  />
+                  <div>
+                     <label className="text-sm font-medium text-foreground">Departamento</label>
+                     <CustomSelect
+                        placeholder="Selecione o departamento"
+                        showDot
+                        options={departmentOptions}
+                        value={department}
+                        onChange={(value) => setDepartment(value as string)}
+                     />
+                  </div>
+
                </CustomCardContent>
 
                <CustomCardFooter className="flex-col gap-4">

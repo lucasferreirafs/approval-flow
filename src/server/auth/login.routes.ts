@@ -14,6 +14,7 @@ export async function POST(request: Request) {
       )
     }
 
+    return NextResponse.json({email, password})
   } catch (error: unknown) {
     console.error(error)
     return NextResponse.json(
