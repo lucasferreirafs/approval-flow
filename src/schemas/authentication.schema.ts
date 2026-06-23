@@ -38,5 +38,14 @@ export const registerApiSchema = z.object({
         .min(1, 'Selecione um departamento'),
 })
 
+export const loginSchema = z.object({
+    email: z
+        .string()
+        .email("E-mail inválido"),
+    password: z
+        .string()
+        .min(8, "A senha deve ter pelo menos 8 caracteres"),
+})
+
 export type RegisterSchema = z.infer<typeof registerSchema>
 export type RegisterApiSchema = z.infer<typeof registerApiSchema>

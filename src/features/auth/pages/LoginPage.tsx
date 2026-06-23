@@ -1,14 +1,24 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
-import { useToast } from "@/contexts/toast-context";
-import { Workflow, Sun, Moon, Eye, EyeOff } from "lucide-react";
-import { CustomCard, CustomCardContent, CustomCardDescription, CustomCardFooter, CustomCardHeader, CustomCardTitle } from "@/components/ui/CustomCard";
-import { CustomInput } from "@/components/ui/CustomInput";
-import { CustomButton } from "@/components/ui/CustomButton";
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
+import { useToast } from "@/contexts/toast-context"
+import { Workflow, Sun, Moon, Eye, EyeOff } from "lucide-react"
+import {
+   CustomCard,
+   CustomCardContent,
+   CustomCardDescription,
+   CustomCardFooter,
+   CustomCardHeader,
+   CustomCardTitle
+} from "@/components/ui/CustomCard"
+import { CustomInput } from "@/components/ui/CustomInput"
+import { CustomButton } from "@/components/ui/CustomButton"
+import { loginSchema } from "@/schemas/authentication.schema"
+import { stringify } from "querystring"
+
 
 export function LoginPage() {
    const router = useRouter()
@@ -17,17 +27,62 @@ export function LoginPage() {
    const [loading, setLoading] = useState(false)
    const [showPassword, setShowPassword] = useState(false)
 
-   const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
+   // Data
+   const [email, setEmail] = useState<string>()
+   const [password, setPassword] = useState<string>()
 
-      setLoading(true);
+   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
 
-      addToast({
-         title: "Login realizado com sucesso!",
-         message: "Bem-vindo ao ApprovalFlow",
-         type: "success",
-      });
-      router.push("/dashboard");
+      const result = loginSchema.safeParse({
+         email,
+         password,
+      })
+
+
+      if (!result.success) {
+         addToast({
+            title: "Ops, algo deu errado!",
+            message: result.error.issues[0].message,
+            type: "error",
+         })
+
+         return
+      }
+
+      setLoading(true)
+
+      try {
+         const res = await fetch("/api/login",{
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(result.data),
+         })
+
+         const json = await res.json()
+
+         if (!res.ok || !json.success) {
+            addToast({ 
+               title: "Ops, algo deu errado!", 
+               message: json.message ?? "Erro inesperado", 
+               type: "error",
+            })
+            return
+         }
+
+         // router.push("/dashboard")
+         
+      } catch (error: unknown) {
+
+         addToast({
+            title: 'Erro',
+            message: error instanceof Error ? error.message : 'Erro inesperado',
+            type: 'error',
+         })
+
+      } finally {
+         setLoading(false)
+      }
    };
 
    return (
@@ -64,8 +119,8 @@ export function LoginPage() {
                <CustomCardContent className="space-y-4">
                   <CustomInput
                      label="E-mail"
-                     type="email"
                      placeholder="seu@email.com"
+                     onChange={(e) => setEmail(e.target.value)}
                   />
 
                   <div className="relative">
@@ -73,6 +128,7 @@ export function LoginPage() {
                         label="Senha"
                         type={showPassword ? "text" : "password"}
                         placeholder="Sua senha"
+                        onChange={(e) => setPassword(e.target.value)}
                      />
                      <button
                         type="button"

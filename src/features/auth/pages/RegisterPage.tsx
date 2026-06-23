@@ -37,9 +37,9 @@ export function RegisterPage() {
    const router = useRouter()
    const { theme, setTheme } = useTheme()
    const { addToast } = useToast()
-   const [loading, setLoading] = useState(false)
-   const [showPassword, setShowPassword] = useState(false)
-   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+   const [loading, setLoading] = useState<boolean>(false)
+   const [showPassword, setShowPassword] = useState<boolean>(false)
+   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false)
    const [departmentOptions, setDepartmentOptions] = useState<DepartmentOptions[]>([])
 
    // Data
@@ -84,7 +84,13 @@ export function RegisterPage() {
    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
 
-      const result = registerSchema.safeParse({ name, email, password, confirmPassword, department })
+      const result = registerSchema.safeParse({ 
+         name, 
+         email, 
+         password,
+         confirmPassword, 
+         department 
+      })
 
       if (!result.success) {
          addToast({
@@ -107,7 +113,7 @@ export function RegisterPage() {
       setLoading(true)
 
       try {
-         const res = await fetch("/api/auth/register", {
+         const res = await fetch("/api/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ...rest, department: selectedDepartment.id }),
@@ -123,11 +129,13 @@ export function RegisterPage() {
          router.push("/login")
 
       } catch (error: unknown) {
+
          addToast({
             title: 'Erro',
             message: error instanceof Error ? error.message : 'Erro inesperado',
             type: 'error',
          })
+         
       } finally {
          setLoading(false)
       }
@@ -209,7 +217,7 @@ export function RegisterPage() {
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-3 top-8.5 text-muted-foreground hover:text-foreground transition-colors"
                      >
-                        {false ? (
+                        {showConfirmPassword ? (
                            <EyeOff className="h-4 w-4" />
                         ) : (
                            <Eye className="h-4 w-4" />
