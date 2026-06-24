@@ -40,10 +40,10 @@ export const registerApiSchema = z.object({
 
 export const loginSchema = z.object({
     email: z
-        .string()
-        .email("E-mail inválido"),
+        .string("Preencha o campo de e-mail.")
+        .email("Por favor, informe um endereço de e-mail válido."),
     password: z
-        .string()
+        .string("Digite sua senha.")
         .min(8, "A senha deve ter pelo menos 8 caracteres"),
 })
 

@@ -89,7 +89,6 @@ model users {
   password_hash                  String                        @db.VarChar(255)
   role                           user_role                     @default(colaborador)
   department_id                  String?                       @db.Uuid
-  cargo                          String                        @db.VarChar(255)
   avatar                         String?
   is_approver                    Boolean                       @default(false)
   email_notifications            Boolean                       @default(true)

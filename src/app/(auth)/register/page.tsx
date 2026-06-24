@@ -1,3 +1,3 @@
-import { RegisterPage } from "@/features/auth/pages/RegisterPage";
+import { RegisterPage } from "@/features/auth/pages/RegisterPage"
 
-export default RegisterPage;
+export default RegisterPage

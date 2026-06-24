@@ -1,8 +1,8 @@
 import { registerApiSchema } from "@/schemas/authentication.schema"
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
-import bcrypt from "bcryptjs"
 import { Prisma } from "../../../generated/prisma/client"
+import { hashPassword } from "@/lib/auth"
 
 export async function POST(request: Request) {
     try {
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         }
 
         const { ...data } = result.data
-        const passwordHash = await bcrypt.hash(data.password, 10)
+        const passwordHash = await hashPassword(data.password)
 
         await prisma.users.create({
             data: {
@@ -28,7 +28,6 @@ export async function POST(request: Request) {
                 email: data.email,
                 password_hash: passwordHash,
                 department_id: data.department,
-                role: "colaborador",
             }
         })
 

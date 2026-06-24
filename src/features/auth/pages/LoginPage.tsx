@@ -17,7 +17,6 @@ import {
 import { CustomInput } from "@/components/ui/CustomInput"
 import { CustomButton } from "@/components/ui/CustomButton"
 import { loginSchema } from "@/schemas/authentication.schema"
-import { stringify } from "querystring"
 
 
 export function LoginPage() {
@@ -42,9 +41,9 @@ export function LoginPage() {
 
       if (!result.success) {
          addToast({
-            title: "Ops, algo deu errado!",
+            title: "Algo deu errado. Tente novamente.",
             message: result.error.issues[0].message,
-            type: "error",
+            type: "warning",
          })
 
          return
@@ -53,7 +52,7 @@ export function LoginPage() {
       setLoading(true)
 
       try {
-         const res = await fetch("/api/login",{
+         const res = await fetch("/api/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(result.data),
@@ -61,17 +60,27 @@ export function LoginPage() {
 
          const json = await res.json()
 
-         if (!res.ok || !json.success) {
-            addToast({ 
-               title: "Ops, algo deu errado!", 
-               message: json.message ?? "Erro inesperado", 
+         if (!json.success) {
+            addToast({
+               title: "Não foi possível concluir a operação.",
+               message:
+                  json.message ??
+                  "Não foi possível concluir a operação devido a um erro inesperado. Procure o suporte responsável.",
                type: "error",
             })
             return
          }
 
-         // router.push("/dashboard")
-         
+         if (json.success) {
+            addToast({
+               title: "Bem-vindo(a) ao ApprovalFlow!",
+               message: "Você foi autenticado com sucesso. Redirecionando para o sistema...",
+               type: "success",
+            })
+            router.refresh()
+            router.push("/dashboard")
+         }
+
       } catch (error: unknown) {
 
          addToast({
