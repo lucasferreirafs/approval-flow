@@ -3,13 +3,11 @@ import { jwtVerify, SignJWT } from "jose"
 
 type user_role = "colaborador" | "aprovador" | "admin"
 
-
-
 export type JwtPayload = {
-  sub: string
+  id: string
   email: string
-  nome: string
-  avatar: string | null
+  name: string
+  perfil: string | null
   role: user_role
 }
 
