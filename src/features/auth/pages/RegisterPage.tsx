@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/CustomCard"
 import { CustomInput } from "@/components/ui/CustomInput"
 import { CustomButton } from "@/components/ui/CustomButton"
-import { CustomSelect } from "@/components/ui/custom-select"
+import { CustomSelect } from "@/components/ui/CustomSelect"
 import { registerSchema } from "@/schemas/authentication.schema"
 
 

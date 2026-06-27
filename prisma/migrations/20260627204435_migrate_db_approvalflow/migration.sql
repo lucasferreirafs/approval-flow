@@ -83,7 +83,6 @@ CREATE TABLE "users" (
     "password_hash" VARCHAR(255) NOT NULL,
     "role" "user_role" NOT NULL DEFAULT 'colaborador',
     "department_id" UUID,
-    "cargo" VARCHAR(255) NOT NULL,
     "avatar" TEXT,
     "is_approver" BOOLEAN NOT NULL DEFAULT false,
     "email_notifications" BOOLEAN NOT NULL DEFAULT true,
