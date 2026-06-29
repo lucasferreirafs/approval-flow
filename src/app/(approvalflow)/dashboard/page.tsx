@@ -1,3 +1,3 @@
-import { DashboardPage } from "@/features/dashboard/pages/DashboardPage"
+import DashboardPage from "@/features/dashboard/pages/DashboardPage"
 
 export default DashboardPage
