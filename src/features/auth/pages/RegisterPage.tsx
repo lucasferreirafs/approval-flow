@@ -52,7 +52,7 @@ export function RegisterPage() {
    useEffect(() => {
       const fetchDepartments = async () => {
          try {
-            const res = await fetch('/api/department')
+            const res = await fetch('/api/departments')
             const json = await res.json()
 
             if (!json.success) {
@@ -64,7 +64,7 @@ export function RegisterPage() {
             const options = data.map((opt: Options) => ({
                id: opt.id,
                value: opt.name,
-               label: opt.description ?? opt.name,
+               label: opt.name,
                color: opt.color,
             }))
 
