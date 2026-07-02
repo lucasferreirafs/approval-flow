@@ -1,9 +1,29 @@
 import prisma from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
-        const tasks = await prisma.tasks.findMany()
+        const { searchParams } = new URL(request.url)
+        const id = searchParams.get("id")
+
+        if(!id) {
+            return new NextResponse(JSON.stringify({
+                success: false,
+                message: "ID da tarefa não fornecido.",
+            }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            })
+        }
+
+        const tasks = await prisma.tasks.findMany({
+            where: {
+                created_by: id
+            },
+            orderBy: {
+                created_at: "desc"
+            }
+        })
 
         return new NextResponse(JSON.stringify({
             success: true,

@@ -6,7 +6,7 @@ import { CollaboratorDashboard } from '@/components/dashboard';
 import { CustomButton } from '@/components/ui/';
 import { useSession } from '@/contexts/session-context';
 import { RotateCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface DataCollaborator {
     id: string
@@ -19,13 +19,13 @@ interface DataCollaborator {
 
 export default function DashboardPage() {
     const { user } = useSession()
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState<boolean>(true);
     const [dataCollaborator, setDataCollaborator] = useState<DataCollaborator[]>([])
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [tasksRes, departmentsRes] = await Promise.all([
-                fetch('/api/tasks'),
+                fetch(`/api/tasks?id=${user.id}`),
                 fetch('/api/departments'),
             ])
 
@@ -38,6 +38,11 @@ export default function DashboardPage() {
                 throw new Error('Falha ao carregar dados da API')
             }
 
+            if(tasksData.data.length === 0) {
+                setDataCollaborator([])
+                return
+            }
+            
             setDataCollaborator(
                 tasksData.data.map((task: DataCollaborator) => {
                     const department = departmentsData.data.find((dept: { id: string; name: string }) => dept.id === task.department_id)
@@ -56,17 +61,14 @@ export default function DashboardPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [user.id])
 
     useEffect(() => {
-        const timer = window.setTimeout(() => {
+        const id = window.setTimeout(() => {
             fetchData()
         }, 0)
-
-        return () => {
-            window.clearTimeout(timer)
-        }
-    }, [])
+        return () => window.clearTimeout(id)
+    }, [user.id, fetchData])
 
     const handleRefresh = () => {
         setLoading(true)
