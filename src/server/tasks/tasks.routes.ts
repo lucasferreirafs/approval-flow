@@ -1,24 +1,24 @@
 import prisma from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { getCurrentUser } from "@/lib/get-current-user"
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
-        const { searchParams } = new URL(request.url)
-        const id = searchParams.get("id")
+        const user = await getCurrentUser()
 
-        if(!id) {
+        if (!user) {
             return new NextResponse(JSON.stringify({
                 success: false,
-                message: "ID da tarefa não fornecido.",
+                message: "Usuário não autenticado.",
             }), {
-                status: 400,
+                status: 401,
                 headers: { "Content-Type": "application/json" },
             })
         }
 
         const tasks = await prisma.tasks.findMany({
             where: {
-                created_by: id
+                created_by: user.id
             },
             orderBy: {
                 created_at: "desc"
@@ -32,7 +32,6 @@ export async function GET(request: Request) {
             status: 200,
             headers: { "Content-Type": "application/json" },
         })
-
     } catch (error: unknown) {
         console.error(error)
         return new NextResponse(JSON.stringify({

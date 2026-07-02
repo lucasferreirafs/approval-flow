@@ -25,8 +25,8 @@ export default function DashboardPage() {
     const fetchData = useCallback(async () => {
         try {
             const [tasksRes, departmentsRes] = await Promise.all([
-                fetch(`/api/tasks?id=${user.id}`),
-                fetch('/api/departments'),
+                fetch("/api/tasks"),
+                fetch("/api/departments"),
             ])
 
             const [tasksData, departmentsData] = await Promise.all([
@@ -61,7 +61,7 @@ export default function DashboardPage() {
         } finally {
             setLoading(false)
         }
-    }, [user.id])
+    }, [])
 
     useEffect(() => {
         const id = window.setTimeout(() => {
