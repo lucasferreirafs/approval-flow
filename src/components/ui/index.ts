@@ -11,3 +11,4 @@ export {
 export { CustomInput } from './CustomInput'
 export { CustomBadge } from './CustomBadge'
 export { CustomSelect } from './CustomSelect'
+export { CustomTextarea } from './CustomTextarea'
