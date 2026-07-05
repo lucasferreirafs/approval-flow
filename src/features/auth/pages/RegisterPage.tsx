@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -18,20 +18,7 @@ import { CustomInput } from "@/components/ui/CustomInput"
 import { CustomButton } from "@/components/ui/CustomButton"
 import { CustomSelect } from "@/components/ui/CustomSelect"
 import { registerSchema } from "@/schemas/authentication.schema"
-
-
-interface DepartmentOptions {
-   id: string
-   value: string
-   label: string
-}
-
-interface Options {
-   id: string
-   name: string
-   description: string
-   color: string
-}
+import { DepartmentOptions } from "@/interfaces"
 
 export function RegisterPage() {
    const router = useRouter()
@@ -49,47 +36,53 @@ export function RegisterPage() {
    const [confirmPassword, setConfirmPassword] = useState<string>("")
    const [department, setDepartment] = useState<string>("")
 
-   useEffect(() => {
-      const fetchDepartments = async () => {
-         try {
-            const res = await fetch('/api/departments')
-            const json = await res.json()
+   const hasFetched = useRef(false)
 
-            if (!json.success) {
-               throw new Error('Erro de requisição')
-            }
+   const fetchDepartments = useCallback(async () => {
+      try {
+         const res = await fetch('/api/departments')
+         const { data } = await res.json()
 
-            const { data } = json
+         if (res.status != 200) {
+            throw new Error('Departamentos indisponíveis. Tente novamente mais tarde.')
+         }
+         
+         const options = data.map((opt: { id: string, name: string, color: string }) => ({
+            id: opt.id,
+            value: opt.name,
+            label: opt.name,
+            color: opt.color,
+         }))
 
-            const options = data.map((opt: Options) => ({
-               id: opt.id,
-               value: opt.name,
-               label: opt.name,
-               color: opt.color,
-            }))
+         setDepartmentOptions(options)
 
-            setDepartmentOptions(options)
+      } catch (error: unknown) {
 
-         } catch (error: unknown) {
-
-            if (error instanceof Error) {
-               console.log('Ops... Algo deu errado no servidor!')
-            }
+         if (error instanceof Error) {
+            addToast({
+               title: "Serviço temporariamente indisponível.",
+               message: error.message,
+               type: "error",
+            })
          }
       }
+   }, [addToast])
 
+   useEffect(() => {
+      if (hasFetched.current) return
+      hasFetched.current = true
       fetchDepartments()
-   }, [])
+   }, [fetchDepartments])
 
    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
 
-      const result = registerSchema.safeParse({ 
-         name, 
-         email, 
+      const result = registerSchema.safeParse({
+         name,
+         email,
          password,
-         confirmPassword, 
-         department 
+         confirmPassword,
+         department
       })
 
       if (!result.success) {
@@ -135,7 +128,7 @@ export function RegisterPage() {
             message: error instanceof Error ? error.message : 'Erro inesperado',
             type: 'error',
          })
-         
+
       } finally {
          setLoading(false)
       }

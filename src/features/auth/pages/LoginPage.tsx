@@ -16,8 +16,7 @@ import {
 } from "@/components/ui/CustomCard"
 import { CustomInput } from "@/components/ui/CustomInput"
 import { CustomButton } from "@/components/ui/CustomButton"
-import { loginSchema } from "@/schemas/authentication.schema"
-
+import { loginSchema } from "@/schemas"
 
 export function LoginPage() {
    const router = useRouter()

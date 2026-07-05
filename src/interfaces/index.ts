@@ -1,0 +1,1 @@
+export type { DepartmentOptions } from "./select"
