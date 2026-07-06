@@ -11,5 +11,7 @@ export {
 // task
 export { 
     newTaskSchema,
-    type NewTaskSchema
+    type NewTaskSchema,
+    newTaskApiSchema,
+    type NewTaskApiSchema
 } from "./task.schema"

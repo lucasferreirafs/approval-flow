@@ -24,8 +24,13 @@ export const newTaskSchema = z.object({
             message: "Data inválida.",
         })
         .refine((date) => new Date(date) >= new Date(new Date().toDateString()), {
-            message: "A data desejada não pode ser no passado.",
+            message: "Ops! A data escolhida já passou. Selecione uma data futura.",
         }),
 })
 
+export const newTaskApiSchema = newTaskSchema.extend({
+    department_id: z.string().uuid("ID do departamento inválido"),
+})
+
 export type NewTaskSchema = z.infer<typeof newTaskSchema>
+export type NewTaskApiSchema = z.infer<typeof newTaskApiSchema>

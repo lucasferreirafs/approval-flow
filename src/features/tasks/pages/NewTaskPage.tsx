@@ -13,23 +13,21 @@ import {
 	CustomSelect,
 	CustomTextarea
 } from "@/components/ui"
-import { useForm } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { DepartmentOptions } from "@/interfaces"
 import { NewTaskSchema, newTaskSchema } from "@/schemas"
 
 export function NewTaskPage() {
 	const [departmentsOption, setDepartmentsOption] = useState<DepartmentOptions[]>([])
-	const [departmentSelect, setDepartmentSelect] = useState<string>("")
 	const [loading, setLoading] = useState<boolean>(false)
-	
+
 	const hasFetched = useRef(false)
-	// const route = useRouter()
+	const route = useRouter()
 	const { addToast } = useToast()
-	const { register, handleSubmit, formState: { errors }} = useForm<NewTaskSchema>({
+	const { register, handleSubmit, formState: { errors }, control } = useForm<NewTaskSchema>({
 		resolver: zodResolver(newTaskSchema),
 	})
-
 
 	const fetchDepartments = useCallback(async () => {
 		try {
@@ -40,12 +38,14 @@ export function NewTaskPage() {
 				throw new Error("Departamentos indisponíveis. Tente novamente mais tarde.")
 			}
 
-			const options = data.map((opt: { id: string, name: string, color: string }) => ({
-				id: opt.id,
-				value: opt.name,
-				label: opt.name,
-				color: opt.color,
-			}))
+			const options = data.map(
+				(opt: { id: string, name: string, color: string }) => ({
+					id: opt.id,
+					value: opt.name,
+					label: opt.name,
+					color: opt.color,
+				})
+			)
 
 			setDepartmentsOption(options)
 
@@ -66,8 +66,52 @@ export function NewTaskPage() {
 		fetchDepartments()
 	}, [fetchDepartments])
 
-	const onSubmit = (data: NewTaskSchema) => {
-		console.log(data)
+	const onSubmit = async (data: NewTaskSchema) => {
+		setLoading(true)
+
+		const id = departmentsOption.find((opt) => opt.value === data.department)?.id
+
+		try {
+			const res = await fetch("/api/tasks/new", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ ...data, department_id: id }),
+			})
+
+			if (res.status == 422) {
+				addToast({
+					title: "Erro de validação",
+					message: "Dados inválidos. Verifique e tente novamente.",
+					type: "warning",
+				})
+			}
+
+			if (res.status != 201) {
+				throw new Error(
+					"Ocorreu um erro interno. Se o problema persistir, entre em contato com o suporte."
+				)
+			} else {
+				addToast({
+					title: "Tudo pronto!",
+					message: "Sua nova tarefa já foi salva.",
+					type: "success"
+				})
+
+				route.push("/tasks")
+			}
+
+		} catch (error: unknown) {
+			console.error(error)
+			if (error instanceof Error) {
+				addToast({
+					title: "Ops! erro do servidor.",
+					message: error.message,
+					type: "error"
+				})
+			}
+		} finally {
+			setLoading(false)
+		}
 	}
 
 	return (
@@ -97,6 +141,7 @@ export function NewTaskPage() {
 								label="Título"
 								placeholder="Ex: Solicitação de novo equipamento"
 							/>
+							{errors.title && <p>{errors.title.message}</p>}
 						</div>
 
 						<div className="space-y-1">
@@ -106,16 +151,26 @@ export function NewTaskPage() {
 								placeholder="Descreva detalhadamente sua solicitação..."
 								className="min-h-30"
 							/>
+							{errors.description && <p>{errors.description.message}</p>}
 						</div>
 
 						<div className="space-y-1">
-							<CustomSelect
-								{...register("department", { required: true })}
-								options={departmentsOption}
-								showDot
-								placeholder="Selecione o departamento"
-								value={departmentSelect}
-								onChange={(value) => setDepartmentSelect(value as string)}
+
+							<Controller
+								name="department"
+								control={control}
+								render={({ field }) => (
+
+									<CustomSelect
+										{...register("department", { required: true })}
+										options={departmentsOption}
+										placeholder="Selecione o departamento"
+										value={field.value}
+										onChange={field.onChange}
+										showDot
+									/>
+								)}
+
 							/>
 							{errors.department && <p>{errors.department.message}</p>}
 						</div>
@@ -126,6 +181,7 @@ export function NewTaskPage() {
 								label="Data desejada"
 								type="date"
 							/>
+							{errors.desiredDate && <p>{errors.desiredDate.message}</p>}
 						</div>
 
 						<div className="flex gap-3 pt-4">

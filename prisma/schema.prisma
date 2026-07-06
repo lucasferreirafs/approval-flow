@@ -52,7 +52,7 @@ model tasks {
   id                             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title                          String         @db.VarChar(255)
   description                    String
-  department_id                  String?        @db.Uuid
+  department_id                  String         @db.Uuid
   status                         task_status    @default(pendente)
   created_by                     String         @db.Uuid
   created_at                     DateTime       @default(now()) @db.Timestamptz(6)
@@ -88,7 +88,7 @@ model users {
   email                          String                        @unique @db.VarChar(255)
   password_hash                  String                        @db.VarChar(255)
   role                           user_role                     @default(colaborador)
-  department_id                  String?                       @db.Uuid
+  department_id                  String                        @db.Uuid
   avatar                         String?
   is_approver                    Boolean                       @default(false)
   email_notifications            Boolean                       @default(true)
