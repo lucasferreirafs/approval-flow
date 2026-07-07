@@ -141,7 +141,7 @@ export function NewTaskPage() {
 								label="Título"
 								placeholder="Ex: Solicitação de novo equipamento"
 							/>
-							{errors.title && <p>{errors.title.message}</p>}
+							{errors.title && <p className="text-xs text-red-500 mt-2">{errors.title.message}</p>}
 						</div>
 
 						<div className="space-y-1">
@@ -151,7 +151,7 @@ export function NewTaskPage() {
 								placeholder="Descreva detalhadamente sua solicitação..."
 								className="min-h-30"
 							/>
-							{errors.description && <p>{errors.description.message}</p>}
+							{errors.description && <p className="text-xs text-red-500 mt-2">{errors.description.message}</p>}
 						</div>
 
 						<div className="space-y-1">
@@ -172,7 +172,7 @@ export function NewTaskPage() {
 								)}
 
 							/>
-							{errors.department && <p>{errors.department.message}</p>}
+							{errors.department && <p className="text-xs text-red-500 mt-2">{errors.department.message}</p>}
 						</div>
 
 						<div className="space-y-1">
@@ -181,7 +181,7 @@ export function NewTaskPage() {
 								label="Data desejada"
 								type="date"
 							/>
-							{errors.desiredDate && <p>{errors.desiredDate.message}</p>}
+							{errors.desiredDate && <p className="text-xs text-red-500 mt-2">{errors.desiredDate.message}</p>}
 						</div>
 
 						<div className="flex gap-3 pt-4">

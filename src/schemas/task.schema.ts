@@ -14,7 +14,7 @@ export const newTaskSchema = z.object({
         .max(1000, "A descrição deve ter no máximo 1000 caracteres."),
 
     department: z
-        .string()
+        .string("Este campo é obrigatório.")
         .min(1, "Este campo é obrigatório."),
 
     desiredDate: z
