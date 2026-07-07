@@ -7,13 +7,12 @@ export async function GET() {
         const user = await getCurrentUser()
 
         if (!user) {
-            return new NextResponse(JSON.stringify({
-                success: false,
-                message: "Usuário não autenticado.",
-            }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" },
-            })
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Usuário não autenticado.",
+                }, { status: 401 }
+            )
         }
 
         const tasks = await prisma.tasks.findMany({
@@ -25,21 +24,20 @@ export async function GET() {
             }
         })
 
-        return new NextResponse(JSON.stringify({
-            success: true,
-            data: tasks,
-        }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        })
+        return NextResponse.json(
+            {
+                success: true,
+                data: tasks,
+            }, { status: 200 }
+        )
+
     } catch (error: unknown) {
         console.error(error)
-        return new NextResponse(JSON.stringify({
-            success: false,
-            message: "Erro interno. Tente novamente.",
-        }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-        })
+        return NextResponse.json(
+            {
+                success: false,
+                message: "Erro interno. Tente novamente.",
+            }, { status: 500 }
+        )
     }
 }

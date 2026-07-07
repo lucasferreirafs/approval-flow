@@ -11,9 +11,9 @@ interface DataTask {
     description: string
     department_id: string
     department: string
-    createdAt: string
+    created_at: string
     status: "pendente" | "aprovada" | "rejeitada" | "concluida"
-    approverId?: string
+    approver_id?: string
 }
 
 const statusConfig: Record<
@@ -27,6 +27,7 @@ const statusConfig: Record<
 }
 
 const statusOptions = [
+    { value: "todos", label: "Todos" },
     { value: "pendente", label: "Pendente", color: "var(--warning)" },
     { value: "aprovada", label: "Aprovada", color: "var(--success)" },
     { value: "rejeitada", label: "Rejeitada", color: "var(--destructive)" },
@@ -84,7 +85,6 @@ export function TasksPage() {
         return matchesSearch && matchesStatus
     })
 
-    console.log(filteredTasks)
     return (    
         <div className="space-y-6">
             {/* Header */}
@@ -153,9 +153,9 @@ export function TasksPage() {
                                         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                                             <span>Departamento: {task.department}</span>
                                             <span>
-                                                Criado em: {new Date(task.createdAt).toLocaleDateString("pt-BR")}
+                                                Criado em: {new Date(task.created_at).toLocaleDateString("pt-BR")}
                                             </span>
-                                            {task.approverId && <span>Aprovador: {task.approverId}</span>}
+                                            {task.approver_id && <span>Aprovador: {task.approver_id}</span>}
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
