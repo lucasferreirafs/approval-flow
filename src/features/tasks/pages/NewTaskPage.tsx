@@ -31,7 +31,7 @@ export function NewTaskPage() {
 
 	const fetchDepartments = useCallback(async () => {
 		try {
-			const res = await fetch("/api/departments")
+			const res = await fetch("/api/departments", { method: "GET" })
 			const { data } = await res.json()
 
 			if (res.status != 200) {
@@ -80,7 +80,7 @@ export function NewTaskPage() {
 
 			if (res.status == 422) {
 				addToast({
-					title: "Erro de validação",
+					title: "Ops! Ocorreu um erro.",
 					message: "Dados inválidos. Verifique e tente novamente.",
 					type: "warning",
 				})
@@ -104,7 +104,7 @@ export function NewTaskPage() {
 			console.error(error)
 			if (error instanceof Error) {
 				addToast({
-					title: "Ops! erro do servidor.",
+					title: "Ops! Ocorreu um erro.",
 					message: error.message,
 					type: "error"
 				})

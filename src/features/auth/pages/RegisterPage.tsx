@@ -40,7 +40,7 @@ export function RegisterPage() {
 
    const fetchDepartments = useCallback(async () => {
       try {
-         const res = await fetch('/api/departments')
+         const res = await fetch('/api/departments', { method: "GET" })
          const { data } = await res.json()
 
          if (res.status != 200) {

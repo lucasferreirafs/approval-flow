@@ -25,8 +25,8 @@ export default function DashboardPage() {
     const fetchData = useCallback(async () => {
         try {
             const [tasksRes, departmentsRes] = await Promise.all([
-                fetch("/api/tasks"),
-                fetch("/api/departments"),
+                fetch(`/api/tasks?userId=${user.id}`, { method: "GET" }),
+                fetch("/api/departments", { method: "GET" }),
             ])
 
             const [tasksData, departmentsData] = await Promise.all([

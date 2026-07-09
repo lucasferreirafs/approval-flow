@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Plus, Eye, Edit, Search } from "lucide-react"
 import { useEffect, useState } from "react"
 import { CustomBadge, CustomButton, CustomCard, CustomCardContent, CustomSelect } from "@/components/ui"
+import { useSession } from "@/contexts/session-context"
 
 interface DataTask {
     id: string
@@ -38,13 +39,14 @@ export function TasksPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("todos")
     const [dataTasks, setDataTasks] = useState<DataTask[]>([])
+    const { user } = useSession()
 
     useEffect(() => {
         const fetchTasks = async () => {
             try {
                 const [tasksRes, departmentsRes] = await Promise.all([
-                fetch("/api/tasks"),
-                fetch("/api/departments"),
+                fetch(`/api/tasks?userId=${user.id}`, { method: "GET" }),
+                fetch("/api/departments", { method: "GET" }),
             ])
             const [tasksData, departmentsData] = await Promise.all([
                 tasksRes.json(),
@@ -52,7 +54,7 @@ export function TasksPage() {
             ])
 
             if (!tasksData.success || !departmentsData.success) {
-                throw new Error('Falha ao carregar dados da API')
+                throw new Error('Falha ao carregar dados.')
             }
 
             if(tasksData.data.length === 0) {
@@ -71,7 +73,7 @@ export function TasksPage() {
             )
 
         } catch (error: unknown) {
-                console.error("Erro interno. Tente novamente.\n[Erro]: ", error)
+                console.error("Erro interno. Tente novamente.")
             }
         }
         fetchTasks()
