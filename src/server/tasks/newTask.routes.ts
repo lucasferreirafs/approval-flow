@@ -19,33 +19,47 @@ export async function POST(request: Request) {
       if (!result.success) {
          return NextResponse.json({
             success: false,
-            message: "Erro de validação.",
+            message: "Informações inválida.",
             errors: result.error.flatten().fieldErrors,
          }, { status: 422 })
       }
 
       const { data } = result
-
       const desiredDate = new Date(data.desiredDate)
 
-      const task = await prisma.tasks.create({
-         data: {
-            title: data.title,
-            description: data.description,
-            department_id: data.department_id,
-            desired_date: desiredDate,
-            created_by: user.id,
-         }
+      const [task, history] = await prisma.$transaction(async (tx) => {
+         const newTask = await tx.tasks.create({
+            data: {
+               title: data.title,
+               description: data.description,
+               department_id: data.department_id,
+               desired_date: desiredDate,
+               created_by: user.id,
+            }
+         })
+
+         const newHistory = await tx.task_history.create({
+            data: {
+               task_id: newTask.id,
+               action: "criada",
+               user_id: user.id,
+               user_name: user.name,
+            }
+         })
+
+         return [newTask, newHistory]
       })
+
+
 
       return NextResponse.json({
          success: true,
          message: "Tarefa criada com sucesso!",
-         data: task,
+         data: { task, history},
       }, { status: 201 })
 
    } catch (error: unknown) {
-      console.error("Erro ao criar tarefa:", error)
+      console.error("Erro interno:", error)
       return NextResponse.json({
          success: false,
          message: "Ocorreu um erro interno.",

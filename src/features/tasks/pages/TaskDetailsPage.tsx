@@ -1,21 +1,40 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useToast } from '@/contexts/toast-context'
-import { ArrowLeft, Check, X, Edit, Calendar, User, Building2, Clock } from 'lucide-react'
+import { ArrowLeft, Check, X, Edit, Calendar, User, Building2, Clock, RotateCw } from 'lucide-react'
 import { useSession } from '@/contexts/session-context';
 import { CustomBadge, CustomButton, CustomCard, CustomCardContent, CustomModal, CustomTextarea } from '@/components/ui';
+import { Task, TaskAction, TaskHistory, TaskStatus } from '@/interfaces'
+import { formatLocalDate } from '@/utils/date'
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'success' | 'error' | 'warning' | 'info' }> = {
+interface StatusConfig {
+   label: string
+   variant: 'default' | 'success' | 'error' | 'warning' | 'info'
+}
+
+interface UserData {
+   id: string
+   name: string
+   email: string
+}
+
+interface DepartmentData {
+   id: string
+   name: string
+   color?: string
+}
+
+const statusConfig: Record<TaskStatus, StatusConfig> = {
    pendente: { label: 'Pendente', variant: 'warning' },
    aprovada: { label: 'Aprovada', variant: 'success' },
    rejeitada: { label: 'Rejeitada', variant: 'error' },
    concluida: { label: 'Concluída', variant: 'info' },
 }
 
-const actionLabels: Record<string, string> = {
+const actionLabels: Record<TaskAction, string> = {
    criada: 'Tarefa criada',
    aprovada: 'Tarefa aprovada',
    rejeitada: 'Tarefa rejeitada',
@@ -23,29 +42,213 @@ const actionLabels: Record<string, string> = {
    reenviada: 'Tarefa reenviada para aprovação',
 }
 
-export default function TaskDetailsPage() {
-   const params = useParams()
-   const router = useRouter()
+export function TaskDetailsPage() {
+   const [approveLoading, setApproveLoading] = useState<boolean>(false)
+   const [rejectLoading, setRejectLoading] = useState<boolean>(false)
+   const [loading, setLoading] = useState<boolean>(true)
    const { user } = useSession()
    const { addToast } = useToast()
    const [rejectModalOpen, setRejectModalOpen] = useState(false)
    const [rejectReason, setRejectReason] = useState('')
-   const [tasks, setTasks] = useState([])
+   const [task, setTask] = useState<Task | null>(null)
+   const [taskHistory, setTaskHistory] = useState<TaskHistory[]>([])
+   const [createdByUser, setCreatedByUser] = useState<UserData | null>(null)
+   const [approverUser, setApproverUser] = useState<UserData | null>(null)
+   const [department, setDepartment] = useState<DepartmentData | null>(null)
 
-   const [localTask, setLocalTask] = useState(() =>
-      tasks.find((t: { id: string }) => t.id === params.id) || tasks[0]
-   )
+   const params = useParams()
+   const taskId = params.id
+
+   const fetchUserData = async (userId: string): Promise<UserData | null> => {
+      try {
+         const res = await fetch(`/api/users/${userId}`)
+         if (!res.ok) return null
+         const data = await res.json()
+         return data.success ? data.data : null
+      } catch {
+         return null
+      }
+   }
+
+   const fetchDepartmentData = async (departmentId: string): Promise<DepartmentData | null> => {
+      try {
+         const res = await fetch(`/api/departments/${departmentId}`)
+         if (!res.ok) return null
+         const data = await res.json()
+         return data.success ? data.data : null
+      } catch {
+         return null
+      }
+   }
 
    useEffect(() => {
-      const fetchTasks = async () => {
-         const res = await fetch("/api/tasks")
+      const fetchAllData = async () => {
+         setLoading(true)
+         try {
+            const [taskRes, historyRes] = await Promise.all([
+               fetch(`/api/tasks/${taskId}`),
+               fetch(`/api/tasks/history/${taskId}`),
+            ])
 
+            const [taskJson, historyJson] = await Promise.all([
+               taskRes.json(),
+               historyRes.json()
+            ])
+
+            if (!taskJson.success || !historyJson.success) {
+               throw new Error("Não foi possível encontrar as informações da tarefa selecionada.")
+            }
+
+            const taskData = taskJson.data
+            console.log(taskData)
+            setTask(taskData)
+            setTaskHistory(historyJson.data)
+
+            // Buscar dados do usuário que criou (criado_por)
+            if (taskData.created_by) {
+               const userData = await fetchUserData(taskData.created_by)
+               setCreatedByUser(userData)
+            }
+
+            // Buscar dados do aprovador
+            if (taskData.approver_id) {
+               const approverData = await fetchUserData(taskData.approver_id)
+               setApproverUser(approverData)
+            }
+
+            // Buscar dados do departamento
+            if (taskData.department_id) {
+               const departmentData = await fetchDepartmentData(taskData.department_id)
+               setDepartment(departmentData)
+            }
+
+         } catch (error: unknown) {
+            console.error("Ocorreu um erro: ", error)
+            if (error instanceof Error) {
+               addToast({
+                  title: "Ops! Ocorreu um erro.",
+                  message: error.message,
+                  type: "error",
+               })
+            }
+
+         } finally {
+            setLoading(false)
+         }
       }
-      fetchTasks()
-   }, [])
 
-   if (!localTask) {
-      return (
+      if (taskId) {
+         fetchAllData()
+      }
+
+   }, [taskId, addToast])
+
+   const handleApprove = async () => {
+      setApproveLoading(true)
+      try {
+         const res = await fetch("/api/tasks/approve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+               taskId: taskId,
+               action: "aprovada",
+               comment: null
+            })
+         })
+
+         if (!res.ok) {
+            throw new Error("Por favor, tente novamente. Se o problema persistir, contate o suporte.")
+         }
+
+         setTask(prev => prev ? { ...prev, status: TaskStatus.APROVADA, approver_id: user.id } : null)
+
+         addToast({
+            title: 'Tarefa aprovada com sucesso!',
+            message: 'Avisamos ao solicitante que está tudo pronto.',
+            type: 'success',
+         })
+
+      } catch (error: unknown) {
+         console.error("Erro na aprovação:", error)
+
+         if (error instanceof Error) {
+            addToast({
+               title: 'Falha na aprovação',
+               message: error.message,
+               type: 'error',
+            })
+         }
+      } finally {
+         setApproveLoading(false)
+      }
+   }
+
+   const handleReject = async () => {
+      setRejectLoading(true)
+      try {
+         if (!rejectReason.trim()) {
+            addToast({
+               title: 'Erro',
+               message: 'Informe o motivo da rejeição.',
+               type: 'error',
+            })
+            setRejectLoading(false)
+            return
+         }
+
+         const res = await fetch("/api/tasks/reject", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+               taskId: taskId,
+               action: "rejeitada",
+               comment: rejectReason
+            })
+         })
+
+         if (!res.ok) {
+            throw new Error("Por favor, tente novamente. Se o problema persistir, contate o suporte.")
+         }
+
+         setTask(prev => prev ? {
+            ...prev,
+            status: TaskStatus.REJEITADA,
+            rejection_reason: rejectReason,
+            rejected_at: new Date().toISOString()
+         } : null)
+
+         addToast({
+            title: 'Tarefa rejeitada',
+            message: 'Avisamos ao solicitante.',
+            type: 'success',
+         })
+
+         setRejectModalOpen(false)
+         setRejectReason('')
+
+      } catch (error: unknown) {
+         console.error("Erro ao rejeitar:", error)
+
+         if (error instanceof Error) {
+            addToast({
+               title: 'Falha ao rejeitar tarefa',
+               message: error.message,
+               type: 'error',
+            })
+         }
+
+      } finally {
+         setRejectLoading(false)
+      }
+   }
+
+   if (!task) {
+      return loading ? (
+         <div className="py-12 flex items-center justify-center text-gray-500">
+            <RotateCw className="h-4 w-4 animate-spin mr-2" />
+            Carregando...
+         </div>
+      ) : (
          <div className="text-center py-12">
             <p className="text-muted-foreground">Tarefa não encontrada</p>
             <Link href="/tasks">
@@ -57,70 +260,11 @@ export default function TaskDetailsPage() {
       )
    }
 
-   const handleApprove = () => {
-      setLocalTask((prev) => ({
-         ...prev,
-         status: 'aprovada',
-         approvedAt: new Date().toISOString(),
-         history: [
-            ...prev.history,
-            {
-               id: String(prev.history.length + 1),
-               action: 'aprovada',
-               date: new Date().toISOString(),
-               user: 'Você',
-               comment: 'Tarefa aprovada',
-            },
-         ],
-      }))
-      addToast({
-         title: 'Tarefa aprovada!',
-         message: 'O solicitante será notificado.',
-         type: 'success',
-      })
-   }
-
-   const handleReject = () => {
-      if (!rejectReason.trim()) {
-         addToast({
-            title: 'Erro',
-            message: 'Informe o motivo da rejeição.',
-            type: 'error',
-         })
-         return
-      }
-
-      setLocalTask((prev) => ({
-         ...prev,
-         status: 'rejeitada',
-         rejectedAt: new Date().toISOString(),
-         rejectionReason: rejectReason,
-         history: [
-            ...prev.history,
-            {
-               id: String(prev.history.length + 1),
-               action: 'rejeitada',
-               date: new Date().toISOString(),
-               user: 'Você',
-               comment: rejectReason,
-            },
-         ],
-      }))
-      setRejectModalOpen(false)
-      setRejectReason('')
-      addToast({
-         title: 'Tarefa rejeitada',
-         message: 'O solicitante será notificado.',
-         type: 'info',
-      })
-   }
-
-   const canApprove = (user.role === 'aprovador' || user.role === 'admin') && localTask.status === 'pendente'
-   const canEdit = user.role === 'colaborador' && localTask.status === 'rejeitada'
-
+   const canApprove = (user.role === 'aprovador' || user.role === 'admin') && task.status === 'pendente'
+   const canEdit = user.role === 'colaborador' && task.status === 'rejeitada'
    return (
       <>
-         <div className="max-w-4xl mx-auto space-y-6">
+         <div className='max-w-4xl mx-auto space-y-6'>
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
                <div className="flex items-start gap-4">
@@ -131,13 +275,13 @@ export default function TaskDetailsPage() {
                   </Link>
                   <div>
                      <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-semibold text-foreground">{localTask.title}</h1>
-                        <CustomBadge variant={statusConfig[localTask.status].variant}>
-                           {statusConfig[localTask.status].label}
+                        <h1 className="text-2xl font-semibold text-foreground">{task.title}</h1>
+                        <CustomBadge variant={statusConfig[task.status].variant}>
+                           {statusConfig[task.status].label}
                         </CustomBadge>
                      </div>
                      <p className="text-muted-foreground mt-1">
-                        Criado por {localTask.createdByName} em {new Date(localTask.createdAt).toLocaleDateString('pt-BR')}
+                        Criado por {createdByUser?.name || 'Carregando...'} em {new Date(task.created_at).toLocaleDateString('pt-BR')}
                      </p>
                   </div>
                </div>
@@ -146,8 +290,10 @@ export default function TaskDetailsPage() {
                <div className="flex gap-2">
                   {canApprove && (
                      <>
-                        <CustomButton onClick={handleApprove}>
-                           <Check className="h-4 w-4 mr-2" />
+                        <CustomButton onClick={handleApprove} disabled={approveLoading}>
+                           {approveLoading ?
+                              <RotateCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 mr-2" />
+                           }
                            Aprovar
                         </CustomButton>
                         <CustomButton variant="destructive" onClick={() => setRejectModalOpen(true)}>
@@ -157,7 +303,7 @@ export default function TaskDetailsPage() {
                      </>
                   )}
                   {canEdit && (
-                     <Link href={`/tasks/${localTask.id}/edit`}>
+                     <Link href={`/tasks/${taskId}/edit`}>
                         <CustomButton>
                            <Edit className="h-4 w-4 mr-2" />
                            Editar e reenviar
@@ -173,16 +319,16 @@ export default function TaskDetailsPage() {
                   <CustomCard>
                      <CustomCardContent className="p-6">
                         <h2 className="text-lg font-semibold text-foreground mb-4">Descrição</h2>
-                        <p className="text-foreground leading-relaxed">{localTask.description}</p>
+                        <p className="text-gray-700 leading-relaxed">{task.description}</p>
                      </CustomCardContent>
                   </CustomCard>
 
                   {/* Motivo da rejeição */}
-                  {localTask.status === 'rejeitada' && localTask.rejectionReason && (
+                  {task.status === 'rejeitada' && task.rejection_reason && (
                      <CustomCard className="border-destructive/50 bg-destructive/5">
                         <CustomCardContent className="p-6">
                            <h2 className="text-lg font-semibold text-destructive mb-2">Motivo da Rejeição</h2>
-                           <p className="text-foreground">{localTask.rejectionReason}</p>
+                           <p className="text-foreground">{task.rejection_reason}</p>
                         </CustomCardContent>
                      </CustomCard>
                   )}
@@ -192,18 +338,18 @@ export default function TaskDetailsPage() {
                      <CustomCardContent className="p-6">
                         <h2 className="text-lg font-semibold text-foreground mb-4">Histórico</h2>
                         <div className="space-y-4">
-                           {localTask.history.map((item, index) => (
+                           {taskHistory.map((item, index) => (
                               <div key={item.id} className="flex gap-4">
                                  <div className="relative">
                                     <div className="w-3 h-3 rounded-full bg-primary mt-1.5" />
-                                    {index < localTask.history.length - 1 && (
+                                    {index < taskHistory.length - 1 && (
                                        <div className="absolute top-4 left-1.5 w-0.5 h-full -translate-x-1/2 bg-border" />
                                     )}
                                  </div>
                                  <div className="flex-1 pb-4">
                                     <p className="font-medium text-foreground">{actionLabels[item.action]}</p>
                                     <p className="text-sm text-muted-foreground">
-                                       por {item.user} em {new Date(item.date).toLocaleDateString('pt-BR')} às{' '}
+                                       por {item.user_name} em {new Date(item.date).toLocaleDateString('pt-BR')} às{' '}
                                        {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                     </p>
                                     {item.comment && (
@@ -216,7 +362,7 @@ export default function TaskDetailsPage() {
                      </CustomCardContent>
                   </CustomCard>
                </div>
-
+                        
                {/* Sidebar com informações */}
                <div className="space-y-6">
                   <CustomCard>
@@ -227,7 +373,9 @@ export default function TaskDetailsPage() {
                            <Building2 className="h-5 w-5 text-muted-foreground" />
                            <div>
                               <p className="text-sm text-muted-foreground">Departamento</p>
-                              <p className="font-medium text-foreground">{localTask.department}</p>
+                              <p className="font-medium text-foreground">
+                                 {department?.name || 'Carregando...'}
+                              </p>
                            </div>
                         </div>
 
@@ -236,7 +384,7 @@ export default function TaskDetailsPage() {
                            <div>
                               <p className="text-sm text-muted-foreground">Data Desejada</p>
                               <p className="font-medium text-foreground">
-                                 {new Date(localTask.desiredDate).toLocaleDateString('pt-BR')}
+                                 {formatLocalDate(task.desired_date)}
                               </p>
                            </div>
                         </div>
@@ -245,16 +393,20 @@ export default function TaskDetailsPage() {
                            <User className="h-5 w-5 text-muted-foreground" />
                            <div>
                               <p className="text-sm text-muted-foreground">Criado por</p>
-                              <p className="font-medium text-foreground">{localTask.createdByName}</p>
+                              <p className="font-medium text-foreground">
+                                 {createdByUser?.name || 'Carregando...'}
+                              </p>
                            </div>
                         </div>
 
-                        {localTask.approverName && (
+                        {task.approver_id && (
                            <div className="flex items-center gap-3">
                               <User className="h-5 w-5 text-muted-foreground" />
                               <div>
                                  <p className="text-sm text-muted-foreground">Aprovador</p>
-                                 <p className="font-medium text-foreground">{localTask.approverName}</p>
+                                 <p className="font-medium text-foreground">
+                                    {approverUser?.name || 'Carregando...'}
+                                 </p>
                               </div>
                            </div>
                         )}
@@ -264,7 +416,7 @@ export default function TaskDetailsPage() {
                            <div>
                               <p className="text-sm text-muted-foreground">Criado em</p>
                               <p className="font-medium text-foreground">
-                                 {new Date(localTask.createdAt).toLocaleDateString('pt-BR')}
+                                 {new Date(task.created_at).toLocaleDateString('pt-BR')}
                               </p>
                            </div>
                         </div>
@@ -287,7 +439,10 @@ export default function TaskDetailsPage() {
                   <CustomButton variant="outline" onClick={() => setRejectModalOpen(false)}>
                      Cancelar
                   </CustomButton>
-                  <CustomButton variant="destructive" onClick={handleReject}>
+                  <CustomButton variant="destructive" onClick={handleReject} disabled={rejectLoading}>
+                     {rejectLoading ?
+                        <RotateCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />
+                     }
                      Confirmar Rejeição
                   </CustomButton>
                </>

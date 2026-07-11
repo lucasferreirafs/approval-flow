@@ -32,5 +32,25 @@ export const newTaskApiSchema = newTaskSchema.extend({
     department_id: z.string().uuid("ID do departamento inválido"),
 })
 
+export const taskHistorySchema = z.object({
+    taskId: z.string().uuid(),
+    action: z.enum(["criada", "aprovada", "rejeitada", "editada", "reenviada"]),
+    comment: z.string().nullable(),
+}).transform((data) => {
+    const statusMap = {
+        "criada": "pendente",
+        "aprovada": "aprovada",
+        "rejeitada": "rejeitada",
+        "editada": "pendente",
+        "reenviada": "pendente",
+    } as const
+
+    return {
+        ...data,
+        status: statusMap[data.action],
+    }
+}) 
+
+export type TaskHistoryInput = z.infer<typeof taskHistorySchema>
 export type NewTaskSchema = z.infer<typeof newTaskSchema>
 export type NewTaskApiSchema = z.infer<typeof newTaskApiSchema>
