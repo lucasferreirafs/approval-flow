@@ -46,8 +46,6 @@ export function TaskDetailsPage() {
    const [approveLoading, setApproveLoading] = useState<boolean>(false)
    const [rejectLoading, setRejectLoading] = useState<boolean>(false)
    const [loading, setLoading] = useState<boolean>(true)
-   const { user } = useSession()
-   const { addToast } = useToast()
    const [rejectModalOpen, setRejectModalOpen] = useState(false)
    const [rejectReason, setRejectReason] = useState('')
    const [task, setTask] = useState<Task | null>(null)
@@ -55,6 +53,8 @@ export function TaskDetailsPage() {
    const [createdByUser, setCreatedByUser] = useState<UserData | null>(null)
    const [approverUser, setApproverUser] = useState<UserData | null>(null)
    const [department, setDepartment] = useState<DepartmentData | null>(null)
+   const { user } = useSession()
+   const { addToast } = useToast()
 
    const params = useParams()
    const taskId = params.id
@@ -100,7 +100,6 @@ export function TaskDetailsPage() {
             }
 
             const taskData = taskJson.data
-            console.log(taskData)
             setTask(taskData)
             setTaskHistory(historyJson.data)
 
@@ -185,17 +184,17 @@ export function TaskDetailsPage() {
 
    const handleReject = async () => {
       setRejectLoading(true)
-      try {
-         if (!rejectReason.trim()) {
-            addToast({
-               title: 'Erro',
-               message: 'Informe o motivo da rejeição.',
-               type: 'error',
-            })
-            setRejectLoading(false)
-            return
-         }
+      if (!rejectReason.trim()) {
+         addToast({
+            title: 'Erro',
+            message: 'Informe o motivo da rejeição.',
+            type: 'error',
+         })
+         setRejectLoading(false)
+         return
+      }
 
+      try {
          const res = await fetch("/api/tasks/reject", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -362,7 +361,7 @@ export function TaskDetailsPage() {
                      </CustomCardContent>
                   </CustomCard>
                </div>
-                        
+
                {/* Sidebar com informações */}
                <div className="space-y-6">
                   <CustomCard>

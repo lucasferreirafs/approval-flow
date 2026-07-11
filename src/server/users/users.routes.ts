@@ -5,22 +5,19 @@ export async function GET() {
     try {
         const users = await prisma.users.findMany()
 
-        return new NextResponse(JSON.stringify({
-            success: true,
-            data: users,
-        }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        })
+        if (!users) {
+            return NextResponse.json(
+                { success: false, message: "Nenhum usuário encontrado." },
+                { status: 404 }
+            )
+        }
+        return NextResponse.json({ success: true, data: users }, { status: 200 })
 
     } catch (error: unknown) {
         console.error(error)
-        return new NextResponse(JSON.stringify({
-            success: false,
-            message: "Erro interno. Tente novamente.",
-        }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-        });
+        return NextResponse.json(
+            { success: false, message: "Ocorreu um erro interno." },
+            { status: 500 }
+        )
     }
 }

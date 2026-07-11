@@ -5,6 +5,7 @@ import { Plus, Eye, Edit, Search } from "lucide-react"
 import { useEffect, useState } from "react"
 import { CustomBadge, CustomButton, CustomCard, CustomCardContent, CustomSelect } from "@/components/ui"
 import { useSession } from "@/contexts/session-context"
+import { useToast } from "@/contexts/toast-context";
 
 interface DataTask {
     id: string
@@ -40,44 +41,52 @@ export function TasksPage() {
     const [statusFilter, setStatusFilter] = useState("todos")
     const [dataTasks, setDataTasks] = useState<DataTask[]>([])
     const { user } = useSession()
+    const { addToast } = useToast()
 
     useEffect(() => {
         const fetchTasks = async () => {
             try {
                 const [tasksRes, departmentsRes] = await Promise.all([
-                fetch(`/api/tasks?userId=${user.id}`, { method: "GET" }),
-                fetch("/api/departments", { method: "GET" }),
-            ])
-            const [tasksData, departmentsData] = await Promise.all([
-                tasksRes.json(),
-                departmentsRes.json(),
-            ])
+                    fetch(`/api/tasks/user/${user.id}`, { method: "GET" }),
+                    fetch("/api/departments", { method: "GET" }),
+                ])
+                const [tasksData, departmentsData] = await Promise.all([
+                    tasksRes.json(),
+                    departmentsRes.json(),
+                ])
 
-            if (!tasksData.success || !departmentsData.success) {
-                throw new Error('Falha ao carregar dados.')
-            }
+                if (!tasksData.success || !departmentsData.success) {
+                    throw new Error('Falha ao carregar dados.')
+                }
 
-            if(tasksData.data.length === 0) {
-                setDataTasks([])
-                return
-            }
-            
-            setDataTasks(
-                tasksData.data.map((task: DataTask) => {
-                    const department = departmentsData.data.find((dept: { id: string; name: string }) => dept.id === task.department_id)
-                    return {
-                        ...task,
-                        department: department ? department.name : 'Desconhecido'
-                    }
-                })
-            )
+                if (tasksData.data.length === 0) {
+                    setDataTasks([])
+                    return
+                }
 
-        } catch (error: unknown) {
-                console.error("Erro interno. Tente novamente.")
+                setDataTasks(
+                    tasksData.data.map((task: DataTask) => {
+                        const department = departmentsData.data.find((dept: { id: string; name: string }) => dept.id === task.department_id)
+                        return {
+                            ...task,
+                            department: department ? department.name : 'Desconhecido'
+                        }
+                    })
+                )
+
+            } catch (error: unknown) {
+                console.error("Ocorreu um erro: ", error)
+                if(error instanceof Error) {
+                    addToast({
+                        title: "Ops! algo deu errado.",
+                        message: error.message,
+                        type: "error"
+                    })
+                }
             }
         }
         fetchTasks()
-    }, [])
+    }, [user.id, addToast])
 
     const filteredTasks = dataTasks.filter((task) => {
         const matchesSearch =
@@ -87,7 +96,7 @@ export function TasksPage() {
         return matchesSearch && matchesStatus
     })
 
-    return (    
+    return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
