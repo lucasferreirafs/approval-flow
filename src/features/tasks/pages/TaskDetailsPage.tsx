@@ -9,7 +9,7 @@ import { useSession } from '@/contexts/session-context';
 import { CustomBadge, CustomButton, CustomCard, CustomCardContent, CustomModal, CustomTextarea } from '@/components/ui';
 import { Task, TaskAction, TaskHistory, TaskStatus } from '@/interfaces'
 import { formatLocalDate } from '@/utils/date'
-
+import { cn } from '@/lib/utils'
 interface StatusConfig {
    label: string
    variant: 'default' | 'success' | 'error' | 'warning' | 'info'
@@ -35,11 +35,19 @@ const statusConfig: Record<TaskStatus, StatusConfig> = {
 }
 
 const actionLabels: Record<TaskAction, string> = {
-   criada: 'Tarefa criada',
-   aprovada: 'Tarefa aprovada',
-   rejeitada: 'Tarefa rejeitada',
-   editada: 'Tarefa editada',
-   reenviada: 'Tarefa reenviada para aprovação',
+   criada: 'Tarefa Criada',
+   aprovada: 'Tarefa Aprovada',
+   rejeitada: 'Tarefa Rejeitada',
+   editada: 'Tarefa Editada',
+   reenviada: 'Tarefa Reenviada para Aprovação',
+}
+
+const actionColorMap: Record<TaskAction, string> = {
+   criada: "bg-primary",
+   aprovada: "bg-success",
+   rejeitada: "bg-destructive",
+   editada: "bg-warning",
+   reenviada: "bg-info",
 }
 
 export function TaskDetailsPage() {
@@ -55,7 +63,6 @@ export function TaskDetailsPage() {
    const [department, setDepartment] = useState<DepartmentData | null>(null)
    const { user } = useSession()
    const { addToast } = useToast()
-
    const params = useParams()
    const taskId = params.id
 
@@ -140,7 +147,7 @@ export function TaskDetailsPage() {
          fetchAllData()
       }
 
-   }, [taskId, addToast])
+   }, [taskId, rejectLoading, addToast, approveLoading])
 
    const handleApprove = async () => {
       setApproveLoading(true)
@@ -183,18 +190,18 @@ export function TaskDetailsPage() {
    }
 
    const handleReject = async () => {
-      setRejectLoading(true)
-      if (!rejectReason.trim()) {
-         addToast({
-            title: 'Erro',
-            message: 'Informe o motivo da rejeição.',
-            type: 'error',
-         })
-         setRejectLoading(false)
-         return
-      }
-
       try {
+         setRejectLoading(true)
+         if (!rejectReason.trim()) {
+            addToast({
+               title: 'Erro',
+               message: 'Informe o motivo da rejeição.',
+               type: 'error',
+            })
+            setRejectLoading(false)
+            return
+         }
+
          const res = await fetch("/api/tasks/reject", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -340,9 +347,14 @@ export function TaskDetailsPage() {
                            {taskHistory.map((item, index) => (
                               <div key={item.id} className="flex gap-4">
                                  <div className="relative">
-                                    <div className="w-3 h-3 rounded-full bg-primary mt-1.5" />
+                                    <div className={cn(
+                                       "w-3 h-3 rounded-full bg-primary mt-1.5",
+                                       actionColorMap[item.action]
+                                    )}
+                                    />
+
                                     {index < taskHistory.length - 1 && (
-                                       <div className="absolute top-4 left-1.5 w-0.5 h-full -translate-x-1/2 bg-border" />
+                                       <div className="absolute top-5 left-1.5 w-0.5 h-full -translate-x-1/2 bg-border" />
                                     )}
                                  </div>
                                  <div className="flex-1 pb-4">

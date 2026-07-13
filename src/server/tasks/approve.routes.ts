@@ -30,13 +30,11 @@ export async function POST(request: Request) {
          data: {
             status: data.status,
             approver_id: user.id,
-            approved_at: data.action === "aprovada" ? new Date() : null,
-            rejected_at: data.action === "aprovada" ? new Date() : null,
-            rejection_reason: data.comment || null,
+            approved_at: data.action === "aprovada" ? new Date() : null
          }
       })
 
-      const history = prisma.task_history.create({
+      const history = await prisma.task_history.create({
          data: {
             task_id: data.taskId,
             action: data.action,
