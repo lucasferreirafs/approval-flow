@@ -1,5 +1,5 @@
-export { CustomAvatar } from './CustomAvatar'
-export { CustomButton } from './CustomButton'
+export { CustomAvatar } from "./CustomAvatar"
+export { CustomButton } from "./CustomButton"
 export { 
     CustomCard, 
     CustomCardHeader, 
@@ -7,9 +7,11 @@ export {
     CustomCardDescription, 
     CustomCardContent,
     CustomCardFooter
-} from './CustomCard'
-export { CustomInput } from './CustomInput'
-export { CustomBadge } from './CustomBadge'
-export { CustomSelect } from './CustomSelect'
-export { CustomTextarea } from './CustomTextarea'
-export { CustomModal } from './CustomModal'
+} from "./CustomCard"
+export { CustomInput } from "./CustomInput"
+export { CustomBadge } from "./CustomBadge"
+export { CustomSelect } from "./CustomSelect"
+export { CustomTextarea } from "./CustomTextarea"
+export { CustomModal } from "./CustomModal"
+export { CustomSwitch } from "./CustomSwitch"
+export { CustomTabs } from "./CustomTabs"
