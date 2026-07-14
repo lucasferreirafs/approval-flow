@@ -16,7 +16,7 @@ import {
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { DepartmentOptions } from "@/interfaces"
-import { NewTaskSchema, newTaskSchema } from "@/schemas"
+import { FormTaskSchema, formTaskSchema } from "@/schemas"
 
 export function NewTaskPage() {
 	const [departmentsOption, setDepartmentsOption] = useState<DepartmentOptions[]>([])
@@ -25,8 +25,8 @@ export function NewTaskPage() {
 	const hasFetched = useRef(false)
 	const route = useRouter()
 	const { addToast } = useToast()
-	const { register, handleSubmit, formState: { errors }, control } = useForm<NewTaskSchema>({
-		resolver: zodResolver(newTaskSchema),
+	const { register, handleSubmit, formState: { errors }, control } = useForm<FormTaskSchema>({
+		resolver: zodResolver(formTaskSchema),
 	})
 
 	const fetchDepartments = useCallback(async () => {
@@ -66,7 +66,7 @@ export function NewTaskPage() {
 		fetchDepartments()
 	}, [fetchDepartments])
 
-	const onSubmit = async (data: NewTaskSchema) => {
+	const onSubmit = async (data: FormTaskSchema) => {
 		setLoading(true)
 
 		const id = departmentsOption.find((opt) => opt.value === data.department)?.id
@@ -155,7 +155,6 @@ export function NewTaskPage() {
 						</div>
 
 						<div className="space-y-1">
-
 							<Controller
 								name="department"
 								control={control}
@@ -170,7 +169,6 @@ export function NewTaskPage() {
 										showDot
 									/>
 								)}
-
 							/>
 							{errors.department && <p className="text-xs text-red-500 mt-2">{errors.department.message}</p>}
 						</div>

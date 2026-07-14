@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const newTaskSchema = z.object({
+export const formTaskSchema = z.object({
     title: z
         .string()
         .trim()
@@ -28,7 +28,7 @@ export const newTaskSchema = z.object({
         }),
 })
 
-export const newTaskApiSchema = newTaskSchema.extend({
+export const newTaskApiSchema = formTaskSchema.extend({
     department_id: z.string().uuid("ID do departamento inválido"),
 })
 
@@ -52,5 +52,5 @@ export const taskHistorySchema = z.object({
 }) 
 
 export type TaskHistoryInput = z.infer<typeof taskHistorySchema>
-export type NewTaskSchema = z.infer<typeof newTaskSchema>
+export type FormTaskSchema = z.infer<typeof formTaskSchema>
 export type NewTaskApiSchema = z.infer<typeof newTaskApiSchema>

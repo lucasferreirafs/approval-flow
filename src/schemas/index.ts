@@ -10,8 +10,8 @@ export {
 
 // task
 export { 
-    newTaskSchema,
-    type NewTaskSchema,
+    formTaskSchema,
+    type FormTaskSchema,
     newTaskApiSchema,
     type NewTaskApiSchema,
     taskHistorySchema,
