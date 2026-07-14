@@ -1,40 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useToast } from '@/contexts/toast-context'
 import { ArrowLeft, Send } from 'lucide-react'
+import { CustomButton, CustomCard, CustomCardContent, CustomInput, CustomSelect, CustomTextarea } from '@/components/ui'
 
 export function EditTaskPage() {
+   const [loading, setLoading] = useState(false)
+   const [task, setTasks] = useState()
    const params = useParams()
    const router = useRouter()
    const { addToast } = useToast()
-   const [loading, setLoading] = useState(false)
-
    // Busca a tarefa pelo id e retorna os dados da tarefas
 
-   const departmentOptions = departments.map((d) => ({
-      value: d.name,
-      label: d.name,
-   }))
+   useEffect(() => {
+      const fetchAllData = async () => {
+         setLoading(true)
+         try {
+            const [taskRes, departmentRes] = await Promise.all([
+               fetch(`/api/tasks/${params.id}`)
+            ])
+         } catch {
+
+         }
+      }
+   }, [])
+
+   const departmentOptions: unknown = []
 
    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault()
 
-      if (!validateForm()) return
-
-      setLoading(true)
-
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      addToast({
-         title: 'Tarefa reenviada para aprovação',
-         message: 'Suas alterações foram salvas.',
-         type: 'success',
-      })
-
-      router.push('/dashboard')
    }
 
    if (!task) {
@@ -49,7 +46,7 @@ export function EditTaskPage() {
       <div className="max-w-2xl mx-auto space-y-6">
          {/* Header */}
          <div className="flex items-center gap-4">
-            <Link href={`/tasks/${task.id}`}>
+            <Link href={`/tasks/${"id task"}`}>
                <CustomButton variant="ghost" className="h-9 w-9 p-0">
                   <ArrowLeft className="h-5 w-5" />
                </CustomButton>
@@ -61,14 +58,14 @@ export function EditTaskPage() {
          </div>
 
          {/* Motivo da rejeição */}
-         {task.rejectionReason && (
+         {/* {task.rejectionReason && (
             <CustomCard className="border-destructive/50 bg-destructive/5">
                <CustomCardContent className="p-4">
                   <h3 className="font-medium text-destructive mb-1">Motivo da Rejeição</h3>
                   <p className="text-sm text-foreground">{task.rejectionReason}</p>
                </CustomCardContent>
             </CustomCard>
-         )}
+         )} */}
 
          {/* Formulário */}
          <CustomCard>
@@ -88,7 +85,7 @@ export function EditTaskPage() {
                      value={formData.description}
                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                      error={errors.description}
-                     className="min-h-[120px]"
+                     className="min-h-30"
                   />
 
                   <CustomSelect
@@ -121,6 +118,6 @@ export function EditTaskPage() {
                </form>
             </CustomCardContent>
          </CustomCard>
-      </div> 
+      </div>
    )
 }
