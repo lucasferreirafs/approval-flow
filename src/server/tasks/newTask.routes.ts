@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { newTaskApiSchema } from "@/schemas"
+import { formTaskApiSchema } from "@/schemas"
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-current-user";
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       }
 
       const body = await request.json()
-      const result = newTaskApiSchema.safeParse(body)
+      const result = formTaskApiSchema.safeParse(body)
 
       if (!result.success) {
          return NextResponse.json({
@@ -27,8 +27,8 @@ export async function POST(request: Request) {
       const { data } = result
       const desiredDate = new Date(data.desiredDate)
 
-      const [task, history] = await prisma.$transaction(async (tx) => {
-         const newTask = await tx.tasks.create({
+      const [task, history] = await prisma.$transaction(async (tk) => {
+         const newTask = await tk.tasks.create({
             data: {
                title: data.title,
                description: data.description,
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
             }
          })
 
-         const newHistory = await tx.task_history.create({
+         const newHistory = await tk.task_history.create({
             data: {
                task_id: newTask.id,
                action: "criada",
@@ -49,9 +49,7 @@ export async function POST(request: Request) {
 
          return [newTask, newHistory]
       })
-
-
-
+      
       return NextResponse.json({
          success: true,
          message: "Tarefa criada com sucesso!",

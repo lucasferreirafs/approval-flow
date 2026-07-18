@@ -12,8 +12,10 @@ export {
 export { 
     formTaskSchema,
     type FormTaskSchema,
-    newTaskApiSchema,
-    type NewTaskApiSchema,
+    formTaskApiSchema,
+    type FormTaskApiSchema,
     taskHistorySchema,
-    type TaskHistoryInput
+    type TaskHistoryInput,
+    formTaskUpdate,
+    type FormTaskUpdate,
 } from "./task.schema"

@@ -14,7 +14,7 @@ import {
    CustomTextarea
 } from '@/components/ui'
 import { DepartmentOptions, Task } from '@/interfaces'
-import { formTaskSchema, FormTaskSchema } from '@/schemas'
+import { FormTaskUpdate, formTaskUpdate } from '@/schemas'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -22,14 +22,19 @@ export function EditTaskPage() {
    const [loading, setLoading] = useState<boolean>(true)
    const [task, setTasks] = useState<Task | null>(null)
    const [departmentsOption, setDepartmentsOption] = useState<DepartmentOptions[]>([])
-   const { register, handleSubmit, formState: { errors }, control } = useForm<FormTaskSchema>({
-      resolver: zodResolver(formTaskSchema),
+   const {
+      register,
+      reset,
+      handleSubmit,
+      control,
+      formState: { errors },
+   } = useForm<FormTaskUpdate>({
+      resolver: zodResolver(formTaskUpdate),
    })
    const params = useParams()
    const route = useRouter()
    const { addToast } = useToast()
    const taskId = params.id
-   // Busca a tarefa pelo id e retorna os dados da tarefas
 
    useEffect(() => {
       const fetchAllData = async () => {
@@ -40,35 +45,50 @@ export function EditTaskPage() {
                fetch(`/api/departments`)
             ])
 
+            if (!taskRes.ok || !departmentRes.ok) {
+               throw new Error("Não foi possível carregar as informações.")
+            }
+
             const [taskJson, departmentJson] = await Promise.all([
                taskRes.json(),
                departmentRes.json()
             ])
 
             if (!taskJson.success || !departmentJson.success) {
-               throw new Error("Não foi possível encontrar as informações da tarefa selecionada.")
+               throw new Error("Dados inválidos recebidos do servidor.")
             }
 
             const departmentData = departmentJson.data
-            const options = departmentData.map(
-               (opt: { id: string, name: string, color: string }) => ({
-                  id: opt.id,
-                  value: opt.name,
-                  label: opt.name,
-                  color: opt.color,
+            const options: DepartmentOptions[] = departmentData.map(
+               (dept: { id: string, name: string, color?: string }) => ({
+                  id: dept.id,
+                  value: dept.id,
+                  label: dept.name,
+                  color: dept.color,
                })
             )
             setDepartmentsOption(options)
-            setTasks(taskJson.data)
+
+            const taskData = Array.isArray(taskJson.data) ? taskJson.data[0] : taskJson.data
+            setTasks(taskData)
+
+            reset({
+               title: taskData.title,
+               description: taskData.description,
+               department: taskData.department_id,
+               desiredDate: taskData.desired_date.split('T')[0],
+            })
 
          } catch (error: unknown) {
-            if (error instanceof Error) {
-               addToast({
-                  title: "Ops! Ocorreu um erro.",
-                  message: error.message,
-                  type: "error",
-               })
-            }
+            const message = error instanceof Error
+               ? error.message
+               : "Erro ao carregar tarefa"
+
+            addToast({
+               title: "Ops! Ocorreu um erro.",
+               message,
+               type: "error",
+            })
 
          } finally {
             setLoading(false)
@@ -78,62 +98,70 @@ export function EditTaskPage() {
       if (taskId) {
          fetchAllData()
       }
-   }, [taskId, addToast])
+   }, [taskId, addToast, reset])
 
-   const onSubmit = async (data: FormTaskSchema) => {
+   const onSubmit = async (data: FormTaskUpdate) => {
       setLoading(true)
       try {
-         const id = departmentsOption.find((opt) => opt.value === data.department)?.id
+         if (!data.department) {
+            throw new Error("Selecione um departamento válido")
+         }
 
          const res = await fetch("/api/tasks/update", {
-            method: "POST",
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...data, department_id: id }),
+            body: JSON.stringify({
+               ...data,
+               department_id: data.department,
+               taskId: task?.id
+            }),
          })
 
-         if (res.status == 422) {
-            addToast({
-               title: "Ops! Ocorreu um erro.",
-               message: "Dados inválidos. Verifique e tente novamente.",
-               type: "warning",
-            })
-         }
+         const responseJson = await res.json()
 
-         if (res.status != 201) {
+         if (!res.ok) {
             throw new Error(
-               "Ocorreu um erro interno. Se o problema persistir, entre em contato com o suporte."
+               responseJson.message ||
+               "Erro ao atualizar tarefa. Tente novamente."
             )
-         } else {
-            addToast({
-               title: "Tudo pronto!",
-               message: "Sua nova tarefa já foi salva.",
-               type: "success"
-            })
-
-            route.push("/tasks")
          }
+
+         addToast({
+            title: "Secesso!",
+            message: "Tarefa reenviada para aprovação.",
+            type: "success"
+         })
+         route.push("/tasks")
 
       } catch (error: unknown) {
-         console.error(error)
-         if (error instanceof Error) {
-            addToast({
-               title: "Ops! Ocorreu um erro.",
-               message: error.message,
-               type: "error"
-            })
-         }
+         console.error("Erro ao atualizar tarefa:", error)
+
+         const message = error instanceof Error
+            ? error.message
+            : "Erro ao carregar tarefa"
+
+         addToast({
+            title: "Ops! Ocorreu um erro.",
+            message,
+            type: "error"
+         })
+
       } finally {
          setLoading(false)
       }
-   }
+   } 
 
-   if (!task) {
-      return loading ? (
+   if(loading) {
+      return (
          <div className="py-12 flex items-center justify-center text-gray-500">
             <RotateCw className="h-4 w-4 animate-spin mr-2" />
             Carregando...
          </div>
-      ) : (
+      )
+   }
+
+   if (!task) {
+      return (
          <div className="text-center py-12">
             <p className="text-muted-foreground">Tarefa não encontrada</p>
             <Link href={`/tasks/${taskId}`}>
@@ -180,7 +208,6 @@ export function EditTaskPage() {
                         {...register("title", { required: true })}
                         label="Título"
                         placeholder="Ex: Solicitação de novo equipamento"
-                        value={task.title}
                      />
                      {errors.title && <p className="text-xs text-red-500 mt-2">{errors.title.message}</p>}
                   </div>
@@ -190,7 +217,6 @@ export function EditTaskPage() {
                         {...register("description", { required: true })}
                         label="Descrição"
                         placeholder="Descreva detalhadamente sua solicitação..."
-                        value={task.description}
                         className="min-h-30"
                      />
                      {errors.description && <p className="text-xs text-red-500 mt-2">{errors.description.message}</p>}
@@ -200,22 +226,14 @@ export function EditTaskPage() {
                      <Controller
                         name="department"
                         control={control}
-                        render={({ field }) => {
-                           const selectedDepartment = departmentsOption.find(
-                              (opt) => opt.id === task?.department_id
-                           )
-
-                           return (
-                              <CustomSelect
-                                 {...register("department", { required: true })}
-                                 options={departmentsOption}
-                                 placeholder="Selecione o departamento"
-                                 value={selectedDepartment?.value || ""}
-                                 onChange={field.onChange}
-                                 showDot
-                              />
-                           )
-                        }}
+                        render={({ field }) => (
+                           <CustomSelect
+                              {...field}
+                              options={departmentsOption}
+                              placeholder="Selecione o departamento"
+                              showDot
+                           />
+                        )}
                      />
                      {errors.department && <p className="text-xs text-red-500 mt-2">{errors.department.message}</p>}
                   </div>
@@ -225,8 +243,7 @@ export function EditTaskPage() {
                         {...register("desiredDate", { required: true })}
                         label="Data desejada"
                         type="date"
-                        value={task.desired_date.split('T')[0]}
-                     /> 
+                     />
                      {errors.desiredDate && <p className="text-xs text-red-500 mt-2">{errors.desiredDate.message}</p>}
                   </div>
 

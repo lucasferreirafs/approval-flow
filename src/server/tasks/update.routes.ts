@@ -1,9 +1,9 @@
-import { getCurrentUser } from "@/lib/get-current-user";
-import prisma from "@/lib/prisma";
-import { taskHistorySchema } from "@/schemas";
-import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/get-current-user"
+import prisma from "@/lib/prisma"
+import { formTaskApiSchema } from "@/schemas"
+import { NextResponse } from "next/server"
 
-export async function POST(request: Request) {
+export async function PUT(req: Request) {
    try {
       const user = await getCurrentUser()
       if (!user) {
@@ -13,9 +13,9 @@ export async function POST(request: Request) {
          }, { status: 401 })
       }
 
-      const body = await request.json()
-      const result = taskHistorySchema.safeParse(body)
-      
+      const body = await req.json()
+      const result = formTaskApiSchema.safeParse(body)
+
       if (!result.success) {
          return NextResponse.json({
             success: false,
@@ -23,32 +23,43 @@ export async function POST(request: Request) {
             errors: result.error.flatten().fieldErrors,
          }, { status: 422 })
       }
+
       const { data } = result
+      const desiredDate = new Date(data.desiredDate)
+
+      if (!data.taskId) {
+         return NextResponse.json({
+            success: false,
+            message: "ID da tarefa inválido."
+         }, { status: 422 })
+      }
 
       const task = await prisma.tasks.update({
          where: { id: data.taskId },
          data: {
-            status: data.status,
-            approver_id: user.id,
-            approved_at: data.action === "aprovada" ? new Date() : null
+            title: data.title,
+            description: data.description,
+            department_id: data.department_id,
+            desired_date: desiredDate,
+            status: "pendente",
          }
       })
 
       const history = await prisma.task_history.create({
          data: {
             task_id: data.taskId,
-            action: data.action,
+            action: "editada",
             user_id: user.id,
             user_name: user.name,
-            comment: data.comment || null,
+            comment: "Tarefa editada pelo usuário",
          }
       })
 
       return NextResponse.json(
          {
             success: true,
-            message: "Atualizado com sucesso!",
-            data: { task, history }
+            message: "Tarefa atualizada com sucesso.",
+            data: { task, history },
          }, { status: 200 }
       )
 
@@ -57,7 +68,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
          {
             success: false,
-            message: "Ocorreu um erro interno."
+            message: "Ocorreu um erro interno.",
          }, { status: 500 }
       )
    }

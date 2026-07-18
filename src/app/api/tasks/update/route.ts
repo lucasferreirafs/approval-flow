@@ -1,0 +1,1 @@
+export { PUT } from "@/server/tasks/update.routes"

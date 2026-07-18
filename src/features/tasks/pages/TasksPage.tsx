@@ -47,7 +47,7 @@ export function TasksPage() {
         const fetchTasks = async () => {
             try {
                 const [tasksRes, departmentsRes] = await Promise.all([
-                    fetch(`/api/tasks/user/${user.id}`, { method: "GET" }),
+                    fetch(`/api/tasks/taskUser/${user.id}`, { method: "GET" }),
                     fetch("/api/departments", { method: "GET" }),
                 ])
                 const [tasksData, departmentsData] = await Promise.all([

@@ -28,8 +28,13 @@ export const formTaskSchema = z.object({
         }),
 })
 
-export const newTaskApiSchema = formTaskSchema.extend({
+export const formTaskUpdate = formTaskSchema.extend({
+    taskId: z.string().uuid("ID da tarefa inválido").optional(),
+})
+
+export const formTaskApiSchema = formTaskSchema.extend({
     department_id: z.string().uuid("ID do departamento inválido"),
+    taskId: z.string().uuid("ID da tarefa inválido").optional(),
 })
 
 export const taskHistorySchema = z.object({
@@ -49,8 +54,9 @@ export const taskHistorySchema = z.object({
         ...data,
         status: statusMap[data.action],
     }
-}) 
+})
 
 export type TaskHistoryInput = z.infer<typeof taskHistorySchema>
 export type FormTaskSchema = z.infer<typeof formTaskSchema>
-export type NewTaskApiSchema = z.infer<typeof newTaskApiSchema>
+export type FormTaskApiSchema = z.infer<typeof formTaskApiSchema>
+export type FormTaskUpdate = z.infer<typeof formTaskUpdate>

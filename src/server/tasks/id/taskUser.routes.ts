@@ -1,17 +1,17 @@
 import prisma from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
-export async function GET(request: Request, { params }: { params: Promise<{ userId: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
    try {
 
-      const { userId } = await params
+      const { id } = await params
 
-      if (!userId) {
+      if (!id) {
          return NextResponse.json({ success: false }, { status: 400 })
       }
 
       const task = await prisma.tasks.findMany({
-         where: { created_by: userId }
+         where: { created_by: id }
       })
 
       if (!task) {

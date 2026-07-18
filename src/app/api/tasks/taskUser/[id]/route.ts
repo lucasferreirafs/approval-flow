@@ -1,0 +1,1 @@
+export { GET } from "@/server/tasks/id/taskUser.routes"
