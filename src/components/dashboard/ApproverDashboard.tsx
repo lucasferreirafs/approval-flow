@@ -18,10 +18,12 @@ import {
    Filter,
    CircleX,
    LucideIcon,
-   RotateCw
+   RotateCw,
+   Eye
 } from 'lucide-react'
 import { DepartmentOptions, Task } from '@/interfaces'
 import { useSession } from '@/contexts/session-context'
+import Link from 'next/link'
 
 interface StatCards {
    title: string
@@ -249,7 +251,7 @@ export function ApproverDashboard({ isLoading }: { isLoading: boolean }) {
             message: "Tarefa aprovada com sucesso.",
             type: "success"
          })
-                  
+
       } catch (error: unknown) {
          console.error("Erro ao aprovar:", error)
          const message = error instanceof Error
@@ -454,6 +456,11 @@ export function ApproverDashboard({ isLoading }: { isLoading: boolean }) {
                                  </td>
                                  <td className="py-4 px-4">
                                     <div className="flex justify-end gap-2">
+                                       <Link href={`/tasks/${task.id}`}>
+                                          <CustomButton variant="outline" className="h-9 px-3 cursor-pointer">
+                                             <Eye className="h-4 w-4" />
+                                          </CustomButton>
+                                       </Link>
                                        <CustomButton
                                           variant="primary"
                                           className="h-8 px-3 text-xs"
