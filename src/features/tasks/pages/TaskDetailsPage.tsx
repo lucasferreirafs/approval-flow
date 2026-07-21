@@ -53,7 +53,7 @@ const actionColorMap: Record<TaskAction, string> = {
 export function TaskDetailsPage() {
    const [approveLoading, setApproveLoading] = useState<boolean>(false)
    const [rejectLoading, setRejectLoading] = useState<boolean>(false)
-   const [loading, setLoading] = useState<boolean>(true)
+   const [loading, setLoading] = useState<boolean>(false)
    const [rejectModalOpen, setRejectModalOpen] = useState(false)
    const [rejectReason, setRejectReason] = useState('')
    const [task, setTask] = useState<Task | null>(null)
@@ -248,21 +248,25 @@ export function TaskDetailsPage() {
       }
    }
 
-   if (!task) {
-      return loading ? (
+   if (loading) {
+      return (
          <div className="py-12 flex items-center justify-center text-gray-500">
             <RotateCw className="h-4 w-4 animate-spin mr-2" />
             Carregando...
          </div>
-      ) : (
+      )
+   }
+
+   if (!task) {
+      return (
          <div className="text-center py-12">
-            <p className="text-muted-foreground">Tarefa não encontrada</p>
+            <p className="text-muted-foreground">Tarefa não encontrada</p >
             <Link href="/tasks">
                <CustomButton variant="outline" className="mt-4">
                   Voltar para tarefas
                </CustomButton>
             </Link>
-         </div>
+         </div >
       )
    }
 

@@ -1,6 +1,6 @@
 export interface DepartmentOptions {
-    id: string
+    id?: string
     value: string
     label: string
-    color: string
+    color?: string
 }

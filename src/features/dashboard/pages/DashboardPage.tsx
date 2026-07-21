@@ -1,8 +1,10 @@
 'use client'
 
-import { CollaboratorDashboard } from '@/components/dashboard';
-// import { ApproverDashboard } from '@/components/dashboard/approver-dashboard'
-// import { AdminDashboard } from '@/components/dashboard/admin-dashboard'
+import { 
+    CollaboratorDashboard,
+    ApproverDashboard,
+    // AdminDashboard
+ } from '@/components/dashboard';
 import { CustomButton } from '@/components/ui/';
 import { useSession } from '@/contexts/session-context';
 import { RotateCw } from 'lucide-react';
@@ -25,7 +27,7 @@ export default function DashboardPage() {
     const fetchData = useCallback(async () => {
         try {
             const [tasksRes, departmentsRes] = await Promise.all([
-                fetch(`/api/tasks?userId=${user.id}`, { method: "GET" }),
+                fetch(`/api/tasks/taskUser/${user.id}`, { method: "GET" }),
                 fetch("/api/departments", { method: "GET" }),
             ])
 
@@ -61,7 +63,7 @@ export default function DashboardPage() {
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [user.id])
 
     useEffect(() => {
         const id = window.setTimeout(() => {
@@ -106,7 +108,7 @@ export default function DashboardPage() {
 
             {/* Dashboard específico por perfil */}
             {user.role === 'colaborador' && <CollaboratorDashboard loading={loading} data={dataCollaborator} />}
-            {/* {user.role === 'aprovador' && <ApproverDashboard />} */}
+            {user.role === 'aprovador' && <ApproverDashboard isLoading={loading} />}
             {/* {user.role === 'admin' && <AdminDashboard />} */}
         </div>
     )

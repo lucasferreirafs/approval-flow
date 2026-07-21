@@ -5,22 +5,29 @@ export async function GET() {
    try {
       const departments = await prisma.departments.findMany()
 
-      return new NextResponse(JSON.stringify({
-         success: true,
-         data: departments,
-      }), {
-         status: 200,
-         headers: { "Content-Type": "application/json" },
-      })
+      if(!departments) {
+         return NextResponse.json(
+            {
+               success: false,
+               message: "Nenhum departamento encontrado."
+            }, { status: 404 }
+         )
+      }
+
+      return NextResponse.json(
+         {
+            success: true,
+            data: departments
+         }, { status: 200 }
+      )
 
    } catch (error: unknown) {
       console.error(error)
-      return new NextResponse(JSON.stringify({
-         success: false,
-         message: "Erro interno. Tente novamente.",
-      }), {
-         status: 500,
-         headers: { "Content-Type": "application/json" },
-      })
+      return NextResponse.json(
+         {
+            success: false,
+            message: "Erro interno, tente novamente."
+         }, { status: 500 }
+      )
    }
 }
