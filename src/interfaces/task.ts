@@ -1,3 +1,7 @@
+import { LucideIcon } from "lucide-react"
+import { DepartmentData } from "./department"
+import { UserData } from "./user"
+
 export interface Task {
    id: string
    title: string
@@ -23,6 +27,18 @@ export interface TaskHistory {
    user_id: string | null
    user_name: string
    comment: string | null
+}
+
+export interface StatCards {
+   title: string
+   value: number
+   icon: LucideIcon
+   color: string
+   bgColor: string
+}
+export interface EnrichedTask extends Task {
+   createdByUser?: UserData
+   departmentData?: DepartmentData
 }
 
 export const TaskAction = {

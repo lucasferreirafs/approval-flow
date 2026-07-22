@@ -1,117 +1,30 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import {
-   CustomCard,
-   CustomCardContent,
-   CustomButton,
-   CustomModal,
-   CustomTextarea,
-   CustomSelect,
-} from '@/components/ui'
 import { useToast } from '@/contexts/toast-context'
-import {
-   Clock,
-   CheckCircle,
-   Check,
-   X,
-   Filter,
-   CircleX,
-   LucideIcon,
-   RotateCw,
-   Eye
-} from 'lucide-react'
-import { DepartmentOptions, Task } from '@/interfaces'
+import { CustomCard, CustomCardContent, CustomButton, CustomModal, CustomTextarea, CustomSelect } from '@/components/ui'
+import { Clock, CheckCircle, Check, X, Filter, CircleX, RotateCw, Eye } from 'lucide-react'
+import { DepartmentData, DepartmentOptions, EnrichedTask, StatCards, Task } from '@/interfaces'
 import { useSession } from '@/contexts/session-context'
 import Link from 'next/link'
-
-interface StatCards {
-   title: string
-   value: number
-   icon: LucideIcon
-   color: string
-   bgColor: string
-}
-
-interface UserData {
-   id: string
-   name: string
-   email: string
-}
-
-interface DepartmentData {
-   id: string
-   name: string
-   color?: string
-}
-
-interface EnrichedTask extends Task {
-   createdByUser?: UserData
-   departmentData?: DepartmentData
-}
+import { enrichTasks } from '@/lib/api/tasks'
+import { mapDepartmentOptions } from '@/lib/api'
 
 export function ApproverDashboard({ isLoading }: { isLoading: boolean }) {
    // Estado do dashboard
    const [loading, setLoading] = useState<boolean>(false)
    const [rejectModalOpen, setRejectModalOpen] = useState(false)
    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-   const [rejectReason, setRejectReason] = useState('')
+   const [rejectReason, setRejectReason] = useState("")
+   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("")
 
    // Dados
    const [tasks, setTasks] = useState<EnrichedTask[]>([])
    const [departmentOptions, setDepartmentOptions] = useState<DepartmentOptions[]>([])
    const [statCards, setStatCards] = useState<StatCards[]>([])
 
-   // Filtro de departamento
-   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('')
-
    const { addToast } = useToast()
    const { user } = useSession()
-
-   // Buscar dados do usuário
-   const fetchUserData = useCallback(async (userId: string): Promise<UserData | null> => {
-      try {
-         const res = await fetch(`/api/users/${userId}`)
-         if (!res.ok) return null
-         const data = await res.json()
-         return data.success ? data.data : null
-      } catch (error) {
-         console.error(`Erro ao buscar usuário ${userId}:`, error)
-         return null
-      }
-   }, [])
-
-   // Buscar dados do departamento
-   const fetchDepartmentData = useCallback(async (departmentId: string): Promise<DepartmentData | null> => {
-      try {
-         const res = await fetch(`/api/departments/${departmentId}`)
-         if (!res.ok) return null
-         const data = await res.json()
-         return data.success ? data.data : null
-      } catch (error) {
-         console.error(`Erro ao buscar departamento ${departmentId}:`, error)
-         return null
-      }
-   }, [])
-
-   // Enriquecer uma tarefa com dados de usuário e departamento
-   const enrichTaskWithData = useCallback(async (task: Task): Promise<EnrichedTask> => {
-      const [createdByUser, departmentData] = await Promise.all([
-         fetchUserData(task.created_by),
-         fetchDepartmentData(task.department_id)
-      ])
-
-      return {
-         ...task,
-         createdByUser: createdByUser || undefined,
-         departmentData: departmentData || undefined
-      }
-   }, [fetchUserData, fetchDepartmentData])
-
-   // Enriquecer lista de tarefas
-   const enrichTasks = useCallback(async (tasksList: Task[]): Promise<EnrichedTask[]> => {
-      return Promise.all(tasksList.map(enrichTaskWithData))
-   }, [enrichTaskWithData])
 
    // Calcular estatísticas
    const calculateStatCards = useCallback((
@@ -144,17 +57,7 @@ export function ApproverDashboard({ isLoading }: { isLoading: boolean }) {
       ]
    }, [])
 
-   // ✅ Mapear opções de departamento
-   const mapDepartmentOptions = useCallback((departments: DepartmentData[]): DepartmentOptions[] => {
-      return departments.map(dept => ({
-         id: dept.id,
-         value: dept.id,
-         label: dept.name,
-         color: dept.color,
-      }))
-   }, [])
-
-   // ✅ Carregar dados iniciais
+   // Carregar dados iniciais
    useEffect(() => {
       const fetchAllData = async () => {
          setLoading(true)
@@ -216,7 +119,7 @@ export function ApproverDashboard({ isLoading }: { isLoading: boolean }) {
 
       fetchAllData()
 
-   }, [user.id, addToast, enrichTasks, calculateStatCards, mapDepartmentOptions, isLoading])
+   }, [user.id, addToast, calculateStatCards, isLoading])
 
    // Filtrar tarefas por departamento selecionado
    const filteredTasks = selectedDepartmentId
@@ -380,20 +283,22 @@ export function ApproverDashboard({ isLoading }: { isLoading: boolean }) {
                         value={selectedDepartmentId}
                         onChange={handleDepartmentFilterChange}
                         showDot
-                        className="w-48"
+                        className="w-70"
                      />
                   </div>
                </div>
 
                {filteredTasks.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                     <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                     <p>
-                        {selectedDepartmentId
-                           ? "Nenhuma tarefa pendente neste departamento"
-                           : "Nenhuma tarefa pendente de aprovação"}
-                     </p>
-                  </div>
+                  <CustomCard>
+                     <CustomCardContent className="p-12 text-center">
+                        <Check className="h-12 w-12 mx-auto mb-4 text-success opacity-50" />
+                        <p className="text-muted-foreground">
+                           {selectedDepartmentId
+                              ? "Nenhuma tarefa pendente neste departamento"
+                              : "Nenhuma tarefa pendente de aprovação"}
+                        </p>
+                     </CustomCardContent>
+                  </CustomCard>
                ) : (
                   <div className="overflow-x-auto">
                      <table className="w-full">
@@ -429,7 +334,6 @@ export function ApproverDashboard({ isLoading }: { isLoading: boolean }) {
                                     {task.createdByUser?.name || task.created_by}
                                  </td>
 
-                                 {/* ✅ Badge com borda e background com 50% de opacidade */}
                                  <td className="py-4 px-4">
                                     <div
                                        className="
