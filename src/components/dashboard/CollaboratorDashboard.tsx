@@ -31,18 +31,6 @@ const STATUSCONFIG: StatusConfig = {
 
 export function CollaboratorDashboard({ data, loading }: Props) {
 
-  const statusCounts = data.reduce(
-    (acc, task) => {
-      acc[task.status]++;
-      return acc;
-    }, {
-      pendente: 0,
-      aprovada: 0,
-      rejeitada: 0,
-      concluida: 0,
-    }
-  )
-
   return (
     <div className="space-y-6">
 
@@ -51,7 +39,7 @@ export function CollaboratorDashboard({ data, loading }: Props) {
         <CustomCardContent className="p-6">
           <h3 className="text-lg font-semibold text-foreground mb-2">Tarefas por Status</h3>
           <p className="text-sm text-muted-foreground mb-4">Distribuição das suas tarefas por status atual</p>
-          <TaskStatusChart status={statusCounts} isLoading={loading} />
+          <TaskStatusChart isLoading={loading} />
         </CustomCardContent>
       </CustomCard>
 

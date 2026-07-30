@@ -22,16 +22,16 @@ interface Props {
 }
 
 export function TasksByDepartmentChart({ isLoading }: Props) {
-   // ✅ Estados
+   // Estados do componente
    const [chartData, setChartData] = useState<ChartDataItem[]>([])
    const [loading, setLoading] = useState<boolean>(true)
 
-   // ✅ Paleta de cores dinâmica (usa cores dos departamentos)
+   // Paleta de cores dinâmica (usa cores dos departamentos)
    const generateGradientId = useCallback((departmentId: string): string => {
       return `gradient-${departmentId}`
    }, [])
 
-   // ✅ Contar tarefas por departamento
+   // Contar tarefas por departamento
    const countTasksByDepartment = useCallback((tasksList: Task[]): TasksByDepartment => {
       return tasksList.reduce((acc, task) => {
          const deptId = task.department_id
@@ -40,7 +40,7 @@ export function TasksByDepartmentChart({ isLoading }: Props) {
       }, {} as TasksByDepartment)
    }, [])
 
-   // ✅ Processar dados para o gráfico
+   // Processar dados para o gráfico
    const processChartData = useCallback((
       taskCounts: TasksByDepartment,
       deptList: DepartmentData[]
@@ -56,7 +56,6 @@ export function TasksByDepartmentChart({ isLoading }: Props) {
          .sort((a, b) => b.value - a.value) // Ordenar por quantidade (decrescente)
    }, [generateGradientId])
 
-   // ✅ Buscar dados
    useEffect(() => {
       const fetchAllData = async () => {
          setLoading(true)
@@ -82,12 +81,9 @@ export function TasksByDepartmentChart({ isLoading }: Props) {
             const tasksData: Task[] = tasksJson.data
             const departmentsData: DepartmentData[] = departmentsJson.data
 
-            // ✅ Contar tarefas por departamento
             const taskCounts = countTasksByDepartment(tasksData)
-
-            // ✅ Processar dados para o gráfico
             const data = processChartData(taskCounts, departmentsData)
-            
+
             setChartData(data)
 
          } catch (error: unknown) {
@@ -100,10 +96,8 @@ export function TasksByDepartmentChart({ isLoading }: Props) {
       fetchAllData()
    }, [countTasksByDepartment, processChartData])
 
-   // ✅ Calcular total de tarefas
    const total = chartData.reduce((acc, item) => acc + item.value, 0)
 
-   // ✅ Estados de carregamento e vazio
    if (loading || isLoading) {
       return (
          <div className="flex items-center justify-center gap-1 h-70 text-sm text-muted-foreground">
@@ -127,7 +121,6 @@ export function TasksByDepartmentChart({ isLoading }: Props) {
             <ResponsiveContainer width="100%" height="100%">
                <PieChart>
                   <defs>
-                     {/* ✅ Gerar gradientes dinamicamente */}
                      {chartData.map(item => {
                         const baseColor = item.color
                         const darkerColor = darkenColor(baseColor, 20)
@@ -146,7 +139,7 @@ export function TasksByDepartmentChart({ isLoading }: Props) {
                            </linearGradient>
                         )
                      })}
-                     {/* ✅ Sombra */}
+
                      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
                         <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15" />
                      </filter>
@@ -177,7 +170,6 @@ export function TasksByDepartmentChart({ isLoading }: Props) {
                </PieChart>
             </ResponsiveContainer>
 
-            {/* ✅ Centro do donut com total */}
             <div 
                className="absolute inset-0 flex items-center justify-center pointer-events-none" 
                style={{ marginBottom: '40px' }}
@@ -194,7 +186,7 @@ export function TasksByDepartmentChart({ isLoading }: Props) {
    )
 }
 
-// ✅ Função auxiliar para escurecer cores
+// Função auxiliar para escurecer cores
 function darkenColor(color: string, percent: number): string {
    try {
       const num = parseInt(color.replace('#', ''), 16)

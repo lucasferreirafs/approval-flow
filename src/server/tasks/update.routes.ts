@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma"
 import { formTaskApiSchema } from "@/schemas"
 import { NextResponse } from "next/server"
 
-export async function PUT(req: Request) {
+export async function PUT(request: Request) {
    try {
       const user = await getCurrentUser()
       if (!user) {
@@ -13,7 +13,7 @@ export async function PUT(req: Request) {
          }, { status: 401 })
       }
 
-      const body = await req.json()
+      const body = await request.json()
       const result = formTaskApiSchema.safeParse(body)
 
       if (!result.success) {

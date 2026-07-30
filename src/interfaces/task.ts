@@ -1,4 +1,3 @@
-import { LucideIcon } from "lucide-react"
 import { DepartmentData } from "./department"
 import { UserData } from "./user"
 
@@ -29,13 +28,6 @@ export interface TaskHistory {
    comment: string | null
 }
 
-export interface StatCards {
-   title: string
-   value: number
-   icon: LucideIcon
-   color: string
-   bgColor: string
-}
 export interface EnrichedTask extends Task {
    createdByUser?: UserData
    departmentData?: DepartmentData

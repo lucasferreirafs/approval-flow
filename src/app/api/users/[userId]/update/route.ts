@@ -1,0 +1,1 @@
+export { PUT } from "@/server/users/id/userId.routes"

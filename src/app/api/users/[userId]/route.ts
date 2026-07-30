@@ -1,1 +1,1 @@
-export { GET } from "@/server/users/id/userId.routes"
+export { GET, DELETE } from "@/server/users/id/userId.routes"

@@ -8,5 +8,7 @@ export interface DepartmentOptions {
 export interface DepartmentData {
    id: string
    name: string
+   description?: string
    color?: string
 }
+

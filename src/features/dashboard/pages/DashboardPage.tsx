@@ -3,12 +3,12 @@
 import { 
     CollaboratorDashboard,
     ApproverDashboard,
-    // AdminDashboard
- } from '@/components/dashboard';
-import { CustomButton } from '@/components/ui/';
-import { useSession } from '@/contexts/session-context';
-import { RotateCw } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+    AdminDashboard,
+} from '@/components/dashboard'
+import { CustomButton } from '@/components/ui/'
+import { useSession } from '@/contexts/session-context'
+import { RotateCw } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
 
 interface DataCollaborator {
     id: string
@@ -109,7 +109,7 @@ export default function DashboardPage() {
             {/* Dashboard específico por perfil */}
             {user.role === 'colaborador' && <CollaboratorDashboard loading={loading} data={dataCollaborator} />}
             {user.role === 'aprovador' && <ApproverDashboard isLoading={loading} />}
-            {/* {user.role === 'admin' && <AdminDashboard />} */}
+            {user.role === 'admin' && <AdminDashboard />}
         </div>
     )
 }

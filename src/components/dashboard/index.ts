@@ -1,3 +1,3 @@
-export { CollaboratorDashboard } from './CollaboratorDashboard'
-export { ApproverDashboard } from './ApproverDashboard'
-// export { AdminDashboard } from './admin-dashboard'
+export { CollaboratorDashboard } from "./CollaboratorDashboard"
+export { ApproverDashboard } from "./ApproverDashboard"
+export { AdminDashboard } from "./AdminDashboard"
