@@ -1,38 +1,246 @@
+import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
+import { departmentSchema } from "@/schemas"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ departmentId: string }> }) {
    try {
+      const user = await getCurrentUser()
+      if (!user) {
+         return NextResponse.json({
+            success: false,
+            message: "Usuário não autenticado.",
+         }, { status: 401 })
+      }
 
       const { departmentId } = await params
-
-      if(!departmentId) {
-         return NextResponse.json({ success: false }, { status: 400 })
+      if (!departmentId) {
+         return NextResponse.json({
+            success: false,
+            message: "ID do departamento é obrigatório.",
+         }, { status: 400 })
       }
 
-      const department = await prisma.departments.findUnique({
+      const targetDepartment = await prisma.departments.findUnique({
          where: { id: departmentId },
-         select: { id: true, name: true, color: true }
+         select: {
+            id: true,
+            name: true,
+            description: true,
+            color: true,
+            _count: {
+               select: { users: true }
+            }
+         }
       })
 
-      if (!department) {
-         return NextResponse.json({ success: false }, { status: 404 })
+      if (!targetDepartment) {
+         return NextResponse.json({
+            success: false,
+            message: "Departamento não encontrado.",
+         }, { status: 404 })
       }
 
-      return NextResponse.json(
-         { 
-            success: true, 
-            data: department 
-         }, { status: 200 }
-      )
+      const formattedDepartment = {
+         id: targetDepartment.id,
+         name: targetDepartment.name,
+         description: targetDepartment.description,
+         color: targetDepartment.color,
+         userCount: targetDepartment._count.users,
+      }
+
+      return NextResponse.json({
+         success: true,
+         data: formattedDepartment
+      }, { status: 200 })
 
    } catch (error: unknown) {
-      console.error(error)
-      return NextResponse.json(
-         { 
-            success: false, 
-            message: "Ocorreu um erro interno." 
-         }, { status: 500 }
-      )
+      console.error("Erro ao buscar departamento:", error)
+      return NextResponse.json({
+         success: false,
+         message: "Ocorreu um erro interno.",
+         error: process.env.NODE_ENV === 'development'
+            ? (error instanceof Error ? error.message : "Erro desconhecido")
+            : undefined,
+      }, { status: 500 })
+   }
+}
+
+export async function PUT(request: Request, { params }: { params: Promise<{ departmentId: string }> }) {
+   try {
+      const user = await getCurrentUser()
+      if (!user) {
+         return NextResponse.json({
+            success: false,
+            message: "Usuário não autenticado.",
+         }, { status: 401 })
+      }
+
+      if (user.role !== 'admin') {
+         return NextResponse.json({
+            success: false,
+            message: "Apenas administradores podem editar departamentos.",
+         }, { status: 403 })
+      }
+
+      const { departmentId } = await params
+      if (!departmentId) {
+         return NextResponse.json({
+            success: false,
+            message: "ID do departamento é obrigatório.",
+         }, { status: 400 })
+      }
+
+      const existingDepartment = await prisma.departments.findUnique({
+         where: { id: departmentId }
+      })
+
+      if (!existingDepartment) {
+         return NextResponse.json({
+            success: false,
+            message: "Departamento não encontrado.",
+         }, { status: 404 })
+      }
+
+      const body = await request.json()
+      const result = departmentSchema.safeParse(body)
+
+      if (!result.success) {
+         return NextResponse.json({
+            success: false,
+            message: "Dados inválidos.",
+            errors: result.error.flatten().fieldErrors,
+         }, { status: 422 })
+      }
+
+      const { data } = result
+
+      if (data.name !== existingDepartment.name) {
+         const nameExists = await prisma.departments.findUnique({
+            where: { name: data.name }
+         })
+
+         if (nameExists) {
+            return NextResponse.json({
+               success: false,
+               message: "Já existe um departamento com este nome.",
+            }, { status: 409 })
+         }
+      }
+
+      const updatedDepartment = await prisma.departments.update({
+         where: { id: departmentId },
+         data: {
+            name: data.name,
+            description: data.description || null,
+            color: data.color || null,
+         },
+         select: {
+            id: true,
+            name: true,
+            description: true,
+            color: true,
+            _count: {
+               select: { users: true }
+            }
+         }
+      })
+
+      return NextResponse.json({
+         success: true,
+         message: "Departamento atualizado com sucesso.",
+         data: {
+            id: updatedDepartment.id,
+            name: updatedDepartment.name,
+            description: updatedDepartment.description,
+            color: updatedDepartment.color,
+            userCount: updatedDepartment._count.users,
+         },
+      }, { status: 200 })
+
+   } catch (error: unknown) {
+      console.error("Erro ao atualizar departamento:", error)
+      return NextResponse.json({
+         success: false,
+         message: "Ocorreu um erro interno.",
+         error: process.env.NODE_ENV === 'development'
+            ? (error instanceof Error ? error.message : "Erro desconhecido")
+            : undefined,
+      }, { status: 500 })
+   }
+}
+
+export async function DELETE( request: Request, { params }: { params: Promise<{ departmentId: string }> } ) {
+   try {
+      const user = await getCurrentUser()
+      if (!user) {
+         return NextResponse.json({
+            success: false,
+            message: "Usuário não autenticado.",
+         }, { status: 401 })
+      }
+
+      if (user.role !== 'admin') {
+         return NextResponse.json({
+            success: false,
+            message: "Apenas administradores podem excluir departamentos.",
+         }, { status: 403 })
+      }
+
+      const { departmentId } = await params
+      if (!departmentId) {
+         return NextResponse.json({
+            success: false,
+            message: "ID do departamento é obrigatório.",
+         }, { status: 400 })
+      }
+
+      const existingDepartment = await prisma.departments.findUnique({
+         where: { id: departmentId },
+         select: {
+            id: true,
+            _count: { select: { users: true, tasks: true } }
+         }
+      })
+
+      if (!existingDepartment) {
+         return NextResponse.json({
+            success: false,
+            message: "Departamento não encontrado.",
+         }, { status: 404 })
+      }
+
+      if (existingDepartment._count.users > 0) {
+         return NextResponse.json({
+            success: false,
+            message: `Não é possível excluir. Existem ${existingDepartment._count.users} usuário(s) vinculado(s) a este departamento.`,
+         }, { status: 409 })
+      }
+
+      if (existingDepartment._count.tasks > 0) {
+         return NextResponse.json({
+            success: false,
+            message: `Não é possível excluir. Existem ${existingDepartment._count.tasks} tarefa(s) vinculada(s) a este departamento.`,
+         }, { status: 409 })
+      }
+
+      await prisma.departments.delete({
+         where: { id: departmentId }
+      })
+
+      return NextResponse.json({
+         success: true,
+         message: "Departamento excluído com sucesso.",
+      }, { status: 200 })
+
+   } catch (error: unknown) {
+      console.error("Erro ao excluir departamento:", error)
+      return NextResponse.json({
+         success: false,
+         message: "Ocorreu um erro interno.",
+         error: process.env.NODE_ENV === 'development'
+            ? (error instanceof Error ? error.message : "Erro desconhecido")
+            : undefined,
+      }, { status: 500 })
    }
 }

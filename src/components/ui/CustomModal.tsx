@@ -97,6 +97,7 @@ export function ConfirmModal({
             {cancelText}
           </CustomButton>
           <CustomButton
+            className='cursor-pointer'
             variant={variant === 'destructive' ? 'destructive' : 'primary'}
             onClick={() => {
               onConfirm()

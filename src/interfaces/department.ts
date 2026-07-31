@@ -10,5 +10,6 @@ export interface DepartmentData {
    name: string
    description?: string
    color?: string
+   userCount?: number
 }
 

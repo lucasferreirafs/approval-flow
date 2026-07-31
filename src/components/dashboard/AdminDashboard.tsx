@@ -13,10 +13,6 @@ interface UserWithDept extends User {
    department_name?: string
 }
 
-interface DepartmentWithCount extends DepartmentData {
-   userCount: number
-}
-
 interface RoleOption {
    value: string
    label: string
@@ -45,7 +41,7 @@ export function AdminDashboard() {
    // Dados
    const [statCards, setStatCards] = useState<StatCards[]>([])
    const [users, setUsers] = useState<UserWithDept[]>([])
-   const [departments, setDepartments] = useState<DepartmentWithCount[]>([])
+   const [departments, setDepartments] = useState<DepartmentData[]>([])
 
    // Paginação
    const [pagination, setPagination] = useState<PaginationState>({
@@ -55,14 +51,6 @@ export function AdminDashboard() {
    })
 
    const { addToast } = useToast()
-
-   // Contar usuários por departamento
-   const countUsersByDepartment = useCallback((usersList: User[], deptList: DepartmentData[]): DepartmentWithCount[] => {
-      return deptList.map(dept => ({
-         ...dept,
-         userCount: usersList.filter(u => u.department_id === dept.id).length
-      }))
-   }, [])
 
    // Enriquecer usuários com nome do departamento
    const enrichUsersWithDepartment = useCallback((usersList: User[], deptList: DepartmentData[]): UserWithDept[] => {
@@ -124,7 +112,7 @@ export function AdminDashboard() {
             ])
 
             if (!jsonUsers.success || !jsonTasks.success || !jsonDepartments.success) {
-               throw new Error("Falha ao carregar os dados. Tente novamente mais tarde.")
+               throw new Error("Falha ao buscar informações. Tente novamente mais tarde.")
             }
 
             const usersData: User[] = jsonUsers.data
@@ -132,11 +120,10 @@ export function AdminDashboard() {
             const departmentsData: DepartmentData[] = jsonDepartments.data
 
             const enrichedUsers = enrichUsersWithDepartment(usersData, departmentsData)
-            const departmentsWithCount = countUsersByDepartment(usersData, departmentsData)
             const stats = calculateStatCards(usersData, tasksData)
 
             setUsers(enrichedUsers)
-            setDepartments(departmentsWithCount)
+            setDepartments(departmentsData)
             setStatCards(stats)
 
             const totalPages = Math.ceil(enrichedUsers.length / ITEMS_PER_PAGE)
@@ -164,7 +151,7 @@ export function AdminDashboard() {
 
       fetchAllData()
 
-   }, [enrichUsersWithDepartment, countUsersByDepartment, calculateStatCards, addToast])
+   }, [enrichUsersWithDepartment, calculateStatCards, addToast])
 
    // Atualizar papel do usuário
    const handleRoleChange = useCallback(async (userId: string, newRole: string) => {
@@ -406,7 +393,7 @@ export function AdminDashboard() {
                   </div>
                ) : (
                   <>
-                     <div>
+                     <div className='overflow-x-auto'>
                         <table className="w-full">
                            <thead>
                               <tr className="border-b border-border">
@@ -512,7 +499,7 @@ export function AdminDashboard() {
                                     <button
                                        onClick={() => handlePageChange(page as number)}
                                        className={`
-                                          px-3 py-2 rounded-md transition-colors font-medium text-sm
+                                          w-8 h-8 p-1 rounded-md transition-colors font-medium text-sm
                                           ${pagination.currentPage === page
                                              ? 'bg-primary text-primary-foreground'
                                              : 'border border-border hover:bg-muted'
@@ -572,10 +559,12 @@ export function AdminDashboard() {
                                  </p>
                               </div>
                               {dept.color && (
-                                 <div
-                                    className="w-4 h-4 rounded-full shrink-0"
-                                    style={{ backgroundColor: dept.color }}
-                                 />
+                                 <div className="p-2 rounded-lg bg-primary/6">
+                                    <Building2
+                                       className="h-6 w-6 text-primary"
+                                       style={{ color: dept.color }}
+                                    />
+                                 </div>
                               )}
                            </div>
                            <div className="mt-3 flex items-center gap-2">

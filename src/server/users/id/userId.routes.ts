@@ -5,28 +5,55 @@ import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ userId: string }> }) {
    try {
-      const { userId } = await params
-
-      if (!userId) {
-         return NextResponse.json({ success: false }, { status: 400 })
+      const user = await getCurrentUser()
+      if (!user) {
+         return NextResponse.json({
+            success: false,
+            message: "Usuário não autenticado.",
+         }, { status: 401 })
       }
 
-      const user = await prisma.users.findUnique({
+      const { userId } = await params
+      if (!userId) {
+         return NextResponse.json({
+            success: false,
+            message: "ID do usuário é obrigatório.",
+         }, { status: 400 })
+      }
+
+      const targetUser = await prisma.users.findUnique({
          where: { id: userId },
-         select: { id: true, name: true, email: true, avatar: true }
+         select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            department_id: true,
+            avatar: true,
+         }
       })
 
-      if (!user) return NextResponse.json({ success: false }, { status: 404 })
-
-      return NextResponse.json({ success: true, data: user }, { status: 200 })
-   } catch (error: unknown) {
-      console.error(error)
-      return NextResponse.json(
-         {
+      if (!targetUser) {
+         return NextResponse.json({
             success: false,
-            message: "Ocorreu um erro interno."
-         }, { status: 500 }
-      )
+            message: "Usuário não encontrado.",
+         }, { status: 404 })
+      }
+
+      return NextResponse.json({
+         success: true,
+         data: targetUser
+      }, { status: 200 })
+
+   } catch (error: unknown) {
+      console.error("Erro ao buscar usuário:", error)
+      return NextResponse.json({
+         success: false,
+         message: "Ocorreu um erro ao buscar o usuário.",
+         error: process.env.NODE_ENV === 'development'
+            ? (error instanceof Error ? error.message : "Erro interno desconhecido")
+            : undefined,
+      }, { status: 500 })
    }
 }
 
@@ -62,7 +89,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ user
       if (user.id !== userId && user.role !== 'admin') {
          return NextResponse.json({
             success: false,
-            message: "Você não tem permissão para atualizar este usuário.",
+            message: "Você não tem permissão para realizar esta ação.",
          }, { status: 403 })
       }
 
@@ -139,13 +166,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ user
 
    } catch (error: unknown) {
       console.error("Erro ao atualizar usuário:", error)
-      
-      const message = error instanceof Error ? error.message : "Erro interno desconhecido"
-      
       return NextResponse.json({
          success: false,
          message: "Ocorreu um erro ao atualizar o usuário.",
-         error: process.env.NODE_ENV === 'development' ? message : undefined,
+         error: process.env.NODE_ENV === 'development'
+            ? (error instanceof Error ? error.message : "Erro interno desconhecido")
+            : undefined,
       }, { status: 500 })
    }
 }
@@ -208,11 +234,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
 
    } catch (error: unknown) {
       console.error("Ocorreu um erro: ", error)
-      const message = error instanceof Error ? error.message : "Erro interno desconhecido"
       return NextResponse.json({
          success: false,
          message: "Ocorreu um erro ao deletar o usuário.",
-         error: process.env.NODE_ENV === 'development' ? message : undefined,
+         error: process.env.NODE_ENV === 'development'
+            ? (error instanceof Error ? error.message : "Erro interno desconhecido")
+            : undefined,
       }, { status: 500 })
    }
 }

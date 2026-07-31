@@ -1,1 +1,1 @@
-export { GET } from "@/server/departments/id/departmentId.routes";
+export { GET, PUT, DELETE } from "@/server/departments/id/departmentId.routes";

@@ -134,11 +134,11 @@ export function ApprovalsPage() {
   }, [addToast])
 
   // Fechar modal de rejeição
-  const closeRejectModal = useCallback(() => {
+  const closeRejectModal = () => {
     setRejectModalOpen(false)
     setRejectReason('')
     setSelectedTaskId(null)
-  }, [])
+  }
 
   // Rejeitar tarefa
   const handleReject = useCallback(async () => {
@@ -190,10 +190,10 @@ export function ApprovalsPage() {
   }, [selectedTaskId, rejectReason, addToast])
 
   // Abrir modal de rejeição
-  const openRejectModal = useCallback((taskId: string) => {
+  const openRejectModal = (taskId: string) => {
     setSelectedTaskId(taskId)
     setRejectModalOpen(true)
-  }, [])
+  }
 
   return (
     <div>

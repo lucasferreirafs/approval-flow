@@ -10,3 +10,7 @@ export type * from "./task.schema"
 // User
 export * from "./user.schema"
 export type * from "./user.schema"
+
+// Department
+export * from "./departmentSchema"
+export type * from "./departmentSchema"
