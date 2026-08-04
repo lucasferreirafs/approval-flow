@@ -18,3 +18,7 @@ export interface UserData {
    name: string
    email: string
 }
+
+export interface UserWithDept extends User {
+   department_name?: string
+}

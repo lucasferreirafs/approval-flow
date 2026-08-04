@@ -14,8 +14,7 @@ export async function POST(request: Request) {
                 {
                     success: false,
                     errors: result.error.flatten(),
-                },
-                { status: 400 }
+                }, { status: 400 }
             )
         }
 
@@ -35,22 +34,25 @@ export async function POST(request: Request) {
             {
                 success: true,
                 message: "Usuário cadastrado com sucesso!",
-            },
-            { status: 201 }
+            }, { status: 201 }
         )
     } catch (error: unknown) {
 
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             return NextResponse.json(
-                { success: false, message: "Este e-mail já está cadastrado." },
-                { status: 409 }
+                { 
+                    success: false, 
+                    message: "Este e-mail já está cadastrado.",
+                }, { status: 409 }
             )
         }
 
         console.error(error)
         return NextResponse.json(
-            { success: false, message: "Erro interno. Tente novamente." },
-            { status: 500 },
+            { 
+                success: false, 
+                message: "Erro interno. Tente novamente.",
+            }, { status: 500 },
         )
     }
 }

@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
     if (!valid) {
       return NextResponse.json(
-        { success: false, message: "Não foi possível realizar o login. Verifique sua senha." }
+        { success: false, message: "E-mail ou senha inválidos." }
       )
     }
 

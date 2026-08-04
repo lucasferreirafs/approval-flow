@@ -22,7 +22,6 @@ export const registerSchema = z.object({
     }
 )
 
-// Schema exclusivo para a API — sem confirmPassword
 export const registerApiSchema = z.object({
     name: z
         .string()

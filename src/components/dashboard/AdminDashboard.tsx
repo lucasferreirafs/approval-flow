@@ -7,22 +7,8 @@ import { Users, ClipboardList, TrendingUp, Trash2, Building2, RotateCw, ChevronR
 import { CustomBadge, CustomButton, CustomCard, CustomCardContent, CustomSelect } from '../ui'
 import { ConfirmModal } from '../ui/CustomModal'
 import { TaskStatusChart } from '../charts'
-import { DepartmentData, StatCards, Task, User } from '@/interfaces'
-
-interface UserWithDept extends User {
-   department_name?: string
-}
-
-interface RoleOption {
-   value: string
-   label: string
-}
-
-interface PaginationState {
-   currentPage: number
-   totalPages: number
-   itemsPerPage: number
-}
+import { DepartmentData, PaginationState, RoleOption, StatCards, Task, User, UserWithDept } from '@/interfaces'
+import { enrichUsersWithDepartment } from '@/lib/api'
 
 const ROLE_OPTIONS: RoleOption[] = [
    { value: 'colaborador', label: 'Colaborador' },
@@ -35,7 +21,7 @@ const ITEMS_PER_PAGE = 5
 export function AdminDashboard() {
    // Estados do dashboard
    const [loading, setLoading] = useState<boolean>(true)
-   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false)
    const [selectedUserIdToDelete, setSelectedUserIdToDelete] = useState<string | null>(null)
 
    // Dados
@@ -51,14 +37,6 @@ export function AdminDashboard() {
    })
 
    const { addToast } = useToast()
-
-   // Enriquecer usuários com nome do departamento
-   const enrichUsersWithDepartment = useCallback((usersList: User[], deptList: DepartmentData[]): UserWithDept[] => {
-      return usersList.map(user => ({
-         ...user,
-         department_name: deptList.find(d => d.id === user.department_id)?.name
-      }))
-   }, [])
 
    // Calcular estatísticas
    const calculateStatCards = useCallback((usersList: User[], tasksList: Task[]): StatCards[] => {
@@ -151,7 +129,7 @@ export function AdminDashboard() {
 
       fetchAllData()
 
-   }, [enrichUsersWithDepartment, calculateStatCards, addToast])
+   }, [calculateStatCards, addToast])
 
    // Atualizar papel do usuário
    const handleRoleChange = useCallback(async (userId: string, newRole: string) => {
