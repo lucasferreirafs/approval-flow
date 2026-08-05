@@ -450,54 +450,55 @@ export function AdminDashboard() {
                            </tbody>
                         </table>
                      </div>
+                     {pagination.totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
+                           <div className="text-sm text-muted-foreground">
+                              Página <span className="font-semibold text-foreground">{pagination.currentPage}</span> de{' '}
+                              <span className="font-semibold text-foreground">{pagination.totalPages}</span>
+                           </div>
 
-                     <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
-                        <div className="text-sm text-muted-foreground">
-                           Página <span className="font-semibold text-foreground">{pagination.currentPage}</span> de{' '}
-                           <span className="font-semibold text-foreground">{pagination.totalPages}</span>
-                        </div>
+                           <div className="flex items-center gap-1">
+                              <button
+                                 onClick={() => handlePageChange(pagination.currentPage - 1)}
+                                 disabled={pagination.currentPage === 1}
+                                 className="p-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+                                 title="Página anterior"
+                              >
+                                 <ChevronLeft className="h-4 w-4" />
+                              </button>
 
-                        <div className="flex items-center gap-1">
-                           <button
-                              onClick={() => handlePageChange(pagination.currentPage - 1)}
-                              disabled={pagination.currentPage === 1}
-                              className="p-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
-                              title="Página anterior"
-                           >
-                              <ChevronLeft className="h-4 w-4" />
-                           </button>
-
-                           {getPageNumbers().map((page, index) => (
-                              <div key={index}>
-                                 {page === '...' ? (
-                                    <span className="px-2 text-muted-foreground">•••</span>
-                                 ) : (
-                                    <button
-                                       onClick={() => handlePageChange(page as number)}
-                                       className={`
+                              {getPageNumbers().map((page, index) => (
+                                 <div key={index}>
+                                    {page === '...' ? (
+                                       <span className="px-2 text-muted-foreground">•••</span>
+                                    ) : (
+                                       <button
+                                          onClick={() => handlePageChange(page as number)}
+                                          className={`
                                           w-8 h-8 p-1 rounded-md transition-colors font-medium text-sm
                                           ${pagination.currentPage === page
-                                             ? 'bg-primary text-primary-foreground'
-                                             : 'border border-border hover:bg-muted'
-                                          }
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'border border-border hover:bg-muted'
+                                             }
                                        `}
-                                    >
-                                       {page}
-                                    </button>
-                                 )}
-                              </div>
-                           ))}
+                                       >
+                                          {page}
+                                       </button>
+                                    )}
+                                 </div>
+                              ))}
 
-                           <button
-                              onClick={() => handlePageChange(pagination.currentPage + 1)}
-                              disabled={pagination.currentPage === pagination.totalPages}
-                              className="p-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
-                              title="Próxima página"
-                           >
-                              <ChevronRight className="h-4 w-4" />
-                           </button>
+                              <button
+                                 onClick={() => handlePageChange(pagination.currentPage + 1)}
+                                 disabled={pagination.currentPage === pagination.totalPages}
+                                 className="p-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+                                 title="Próxima página"
+                              >
+                                 <ChevronRight className="h-4 w-4" />
+                              </button>
+                           </div>
                         </div>
-                     </div>
+                     )}
                   </>
                )}
             </CustomCardContent>
