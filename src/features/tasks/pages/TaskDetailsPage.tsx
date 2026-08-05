@@ -64,7 +64,7 @@ export function TaskDetailsPage() {
    const { user } = useSession()
    const { addToast } = useToast()
    const params = useParams()
-   const taskId = params.id
+   const taskId = Array.isArray(params.id) ? params.id[0] : params.id
 
    const fetchUserData = async (userId: string): Promise<UserData | null> => {
       try {
@@ -92,6 +92,10 @@ export function TaskDetailsPage() {
       const fetchAllData = async () => {
          setLoading(true)
          try {
+            if (!taskId) {
+               throw new Error("ID da tarefa não informado.")
+            }
+
             const [taskRes, historyRes] = await Promise.all([
                fetch(`/api/tasks/${taskId}`),
                fetch(`/api/tasks/history/${taskId}`),
@@ -102,9 +106,9 @@ export function TaskDetailsPage() {
                historyRes.json()
             ])
 
-            if (!taskJson.success || !historyJson.success) {
-               throw new Error("Não foi possível encontrar as informações da tarefa selecionada.")
-            }
+            if (!taskJson.success) throw new Error(taskJson.message || "Não foi possível encontrar a tarefa selecionada.")
+
+            if (!historyJson.success) throw new Error(historyJson.message || "Não foi possível encontrar as informações da tarefa selecionada.")
 
             const taskData = taskJson.data
             setTask(taskData)
@@ -130,13 +134,12 @@ export function TaskDetailsPage() {
 
          } catch (error: unknown) {
             console.error("Ocorreu um erro: ", error)
-            if (error instanceof Error) {
-               addToast({
-                  title: "Ops! Ocorreu um erro.",
-                  message: error.message,
-                  type: "error",
-               })
-            }
+            const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado."
+            addToast({
+               title: "Erro ao carregar dados",
+               message,
+               type: "error",
+            })
 
          } finally {
             setLoading(false)
