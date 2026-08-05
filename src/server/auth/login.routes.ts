@@ -3,43 +3,66 @@ import prisma from "@/lib/prisma"
 import { loginSchema } from "@/schemas/authentication.schema"
 import { NextResponse } from "next/server"
 
+const AUTH_COOKIE_NAME = "approval_flow_token"
+const SESSION_DURATION_IN_SECONDS = 60 * 60 * 8
+const DUMMY_PASSWORD_HASH = "$2b$12$t.KmqfVms4/Idh7Vx14GmufbNPCKLN6clVMugYW.nzwKycxYQg55S"
+
+function jsonResponse<T>(body: T, init: ResponseInit) {
+  const headers = new Headers(init.headers)
+  headers.set("Cache-Control", "no-store")
+
+  return NextResponse.json(body, { ...init, headers })
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const result = loginSchema.safeParse(body)
+    let body: unknown
 
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          errors: result.error.flatten(),
-        },
+    try {
+      body = await request.json()
+    } catch {
+      return jsonResponse(
+        { success: false, message: "A requisição contém dados inválidos." },
         { status: 400 }
       )
     }
 
-    const { ...data } = result.data
-    const user = await prisma.users.findUnique({
-      where: {
-        email: data.email,
-      }
-    })
+    const result = loginSchema.safeParse(body)
 
-    if (!user) {
-      return NextResponse.json(
+    if (!result.success) {
+      return jsonResponse(
         {
           success: false,
-          message: "E-mail ou senha inválidos.",
+          message: "Dados de acesso inválidos.",
+          errors: result.error.flatten(),
         },
-        { status: 401 }
+        { status: 422 }
       )
     }
 
-    const valid = await comparePassword(data.password, user?.password_hash)
+    const email = result.data.email.trim().toLowerCase()
+    const user = await prisma.users.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password_hash: true,
+        avatar: true,
+        role: true,
+      },
+    })
 
-    if (!valid) {
-      return NextResponse.json(
-        { success: false, message: "E-mail ou senha inválidos." }
+    // A comparação ocorre mesmo quando o usuário não existe para reduzir a diferença de tempo da resposta.
+    const isPasswordValid = await comparePassword(
+      result.data.password,
+      user?.password_hash ?? DUMMY_PASSWORD_HASH
+    )
+
+    if (!user || !isPasswordValid) {
+      return jsonResponse(
+        { success: false, message: "E-mail ou senha inválidos." },
+        { status: 401 }
       )
     }
 
@@ -48,10 +71,10 @@ export async function POST(request: Request) {
       email: user.email,
       name: user.name,
       perfil: user.avatar,
-      role: user.role
+      role: user.role,
     })
 
-    const response = NextResponse.json(
+    const response = jsonResponse(
       {
         success: true,
         message: "Login realizado com sucesso!",
@@ -60,25 +83,25 @@ export async function POST(request: Request) {
           nome: user.name,
           email: user.email,
           avatar: user.avatar,
-          role: user.role
-        }
+          role: user.role,
+        },
       },
       { status: 200 }
     )
 
-    response.cookies.set("approval_flow_token", token, {
+    response.cookies.set(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 8,
+      maxAge: SESSION_DURATION_IN_SECONDS,
     })
 
     return response
-
   } catch (error: unknown) {
-    console.error(error)
-    return NextResponse.json(
+    console.error("Erro ao realizar login:", error)
+
+    return jsonResponse(
       { success: false, message: "Erro interno. Tente novamente." },
       { status: 500 }
     )

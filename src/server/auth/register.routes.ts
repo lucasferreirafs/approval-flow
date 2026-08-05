@@ -1,58 +1,105 @@
-import { registerApiSchema } from "@/schemas/authentication.schema"
-import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
-import { Prisma } from "../../../generated/prisma/client"
 import { hashPassword } from "@/lib/auth"
+import prisma from "@/lib/prisma"
+import { registerApiSchema } from "@/schemas/authentication.schema"
+import { Prisma } from "../../../generated/prisma/client"
+import { NextResponse } from "next/server"
+
+function jsonResponse<T>(body: T, init: ResponseInit) {
+  const headers = new Headers(init.headers)
+  headers.set("Cache-Control", "no-store")
+
+  return NextResponse.json(body, { ...init, headers })
+}
 
 export async function POST(request: Request) {
+  try {
+    let body: unknown
+
     try {
-        const body = await request.json()
-        const result = registerApiSchema.safeParse(body)
-
-        if (!result.success) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    errors: result.error.flatten(),
-                }, { status: 400 }
-            )
-        }
-
-        const { ...data } = result.data
-        const passwordHash = await hashPassword(data.password)
-
-        await prisma.users.create({
-            data: {
-                name: data.name,
-                email: data.email,
-                password_hash: passwordHash,
-                department_id: data.department,
-            }
-        })
-
-        return NextResponse.json(
-            {
-                success: true,
-                message: "Usuário cadastrado com sucesso!",
-            }, { status: 201 }
-        )
-    } catch (error: unknown) {
-
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            return NextResponse.json(
-                { 
-                    success: false, 
-                    message: "Este e-mail já está cadastrado.",
-                }, { status: 409 }
-            )
-        }
-
-        console.error(error)
-        return NextResponse.json(
-            { 
-                success: false, 
-                message: "Erro interno. Tente novamente.",
-            }, { status: 500 },
-        )
+      body = await request.json()
+    } catch {
+      return jsonResponse(
+        { success: false, message: "A requisição contém dados inválidos." },
+        { status: 400 }
+      )
     }
+
+    const result = registerApiSchema.safeParse(body)
+
+    if (!result.success) {
+      return jsonResponse(
+        {
+          success: false,
+          message: "Dados de cadastro inválidos.",
+          errors: result.error.flatten(),
+        },
+        { status: 422 }
+      )
+    }
+
+    const email = result.data.email.trim().toLowerCase()
+    const [existingUser, department] = await Promise.all([
+      prisma.users.findUnique({
+        where: { email },
+        select: { id: true },
+      }),
+      prisma.departments.findUnique({
+        where: { id: result.data.department },
+        select: { id: true },
+      }),
+    ])
+
+    if (existingUser) {
+      return jsonResponse(
+        { success: false, message: "Não foi possível realizar o cadastro com estes dados." },
+        { status: 409 }
+      )
+    }
+
+    if (!department) {
+      return jsonResponse(
+        { success: false, message: "O departamento selecionado não foi encontrado." },
+        { status: 422 }
+      )
+    }
+
+    const passwordHash = await hashPassword(result.data.password)
+
+    await prisma.users.create({
+      data: {
+        name: result.data.name.trim(),
+        email,
+        password_hash: passwordHash,
+        department_id: department.id,
+      },
+    })
+
+    return jsonResponse(
+      { success: true, message: "Usuário cadastrado com sucesso!" },
+      { status: 201 }
+    )
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return jsonResponse(
+          { success: false, message: "Não foi possível realizar o cadastro com estes dados." },
+          { status: 409 }
+        )
+      }
+
+      if (error.code === "P2003") {
+        return jsonResponse(
+          { success: false, message: "O departamento selecionado não foi encontrado." },
+          { status: 422 }
+        )
+      }
+    }
+
+    console.error("Erro ao cadastrar usuário:", error)
+
+    return jsonResponse(
+      { success: false, message: "Erro interno. Tente novamente." },
+      { status: 500 }
+    )
+  }
 }
