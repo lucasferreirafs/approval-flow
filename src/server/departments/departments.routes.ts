@@ -5,14 +5,6 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
    try {
-      const user = await getCurrentUser()
-      if (!user) {
-         return NextResponse.json({
-            success: false,
-            message: "Usuário não autenticado.",
-         }, { status: 401 })
-      }
-
       const allDepartments = await prisma.departments.findMany({
          select: {
             id: true,
