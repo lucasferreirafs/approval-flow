@@ -199,8 +199,6 @@ export function UsersPage() {
             method: "DELETE"
          })
 
-         if (!res.ok) throw new Error("Erro ao excluir usuário")
-
          const data = await res.json()
 
          if (!data.success) throw new Error(data.message || "Erro ao excluir")

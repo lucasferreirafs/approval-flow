@@ -186,6 +186,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
          }, { status: 401 })
       }
 
+      if (user.role !== 'admin') {
+         return NextResponse.json({
+            success: false,
+            message: "Apenas administradores podem excluir usuários.",
+         }, { status: 403 })
+      }
+
       const { userId } = await params
       if (!userId) {
          return NextResponse.json({
@@ -194,8 +201,24 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
          }, { status: 400 })
       }
 
+      if (user.id === userId) {
+         return NextResponse.json({
+            success: false,
+            message: "Você não pode excluir sua própria conta.",
+         }, { status: 400 })
+      }
+
       const targetUser = await prisma.users.findUnique({
-         where: { id: userId }
+         where: { id: userId },
+         select: {
+            id: true,
+            _count: {
+               select: {
+                  tasks_tasks_created_byTousers: true,
+                  tasks_tasks_approver_idTousers: true,
+               }
+            }
+         }
       })
 
       if (!targetUser) {
@@ -205,11 +228,21 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
          }, { status: 404 })
       }
 
-      if (user.id !== userId && user.role !== 'admin') {
+      const createdTasksCount = targetUser._count.tasks_tasks_created_byTousers
+      const approvedTasksCount = targetUser._count.tasks_tasks_approver_idTousers
+
+      if (createdTasksCount > 0) {
          return NextResponse.json({
             success: false,
-            message: "Você não tem permissão para deletar este usuário.",
-         }, { status: 403 })
+            message: `Não é possível excluir. Este usuário criou ${createdTasksCount} tarefa(s). Reatribua ou exclua as tarefas primeiro.`,
+         }, { status: 409 })
+      }
+
+      if (approvedTasksCount > 0) {
+         return NextResponse.json({
+            success: false,
+            message: `Não é possível excluir. Este usuário aprovou/rejeitou ${approvedTasksCount} tarefa(s).`,
+         }, { status: 409 })
       }
 
       const deletedUser = await prisma.users.delete({
@@ -217,28 +250,22 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
          select: {
             id: true,
             name: true,
-            email: true,
-            role: true,
-            department_id: true,
-            updated_at: true,
          }
       })
 
-      return NextResponse.json(
-         {
-            success: true,
-            message: "Usuário deletado.",
-            data: deletedUser
-         }, { status: 200 }
-      )
+      return NextResponse.json({
+         success: true,
+         message: "Usuário excluído com sucesso.",
+         data: deletedUser,
+      }, { status: 200 })
 
    } catch (error: unknown) {
-      console.error("Ocorreu um erro: ", error)
+      console.error("Erro ao excluir usuário:", error)
       return NextResponse.json({
          success: false,
-         message: "Ocorreu um erro ao deletar o usuário.",
+         message: "Ocorreu um erro ao excluir o usuário.",
          error: process.env.NODE_ENV === 'development'
-            ? (error instanceof Error ? error.message : "Erro interno desconhecido")
+            ? (error instanceof Error ? error.message : "Erro desconhecido")
             : undefined,
       }, { status: 500 })
    }
