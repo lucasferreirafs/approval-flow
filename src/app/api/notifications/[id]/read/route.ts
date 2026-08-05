@@ -1,0 +1,1 @@
+export { PATCH } from "@/server/notifications/id/read/read.routes"
