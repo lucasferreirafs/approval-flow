@@ -1,24 +1,41 @@
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 import { updateUserSchema } from "@/schemas"
+import { Prisma } from "../../../../generated/prisma/client"
 import { NextResponse } from "next/server"
 
-export async function GET(request: Request, { params }: { params: Promise<{ userId: string }> }) {
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function jsonResponse<T>(body: T, init: ResponseInit) {
+   const headers = new Headers(init.headers)
+   headers.set("Cache-Control", "no-store")
+
+   return NextResponse.json(body, { ...init, headers })
+}
+
+function isValidUserId(userId: string | undefined): userId is string {
+   return Boolean(userId && UUID_REGEX.test(userId))
+}
+
+export async function GET(
+   _request: Request,
+   { params }: { params: Promise<{ userId: string }> }
+) {
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
-            success: false,
-            message: "Usuário não autenticado.",
-         }, { status: 401 })
+         return jsonResponse(
+            { success: false, message: "Usuário não autenticado." },
+            { status: 401 }
+         )
       }
 
       const { userId } = await params
-      if (!userId) {
-         return NextResponse.json({
-            success: false,
-            message: "ID do usuário é obrigatório.",
-         }, { status: 400 })
+      if (!isValidUserId(userId)) {
+         return jsonResponse(
+            { success: false, message: "ID do usuário inválido." },
+            { status: 400 }
+         )
       }
 
       const targetUser = await prisma.users.findUnique({
@@ -30,124 +47,142 @@ export async function GET(request: Request, { params }: { params: Promise<{ user
             role: true,
             department_id: true,
             avatar: true,
-         }
+         },
       })
 
       if (!targetUser) {
-         return NextResponse.json({
-            success: false,
-            message: "Usuário não encontrado.",
-         }, { status: 404 })
+         return jsonResponse(
+            { success: false, message: "Usuário não encontrado." },
+            { status: 404 }
+         )
       }
 
-      return NextResponse.json({
-         success: true,
-         data: targetUser
-      }, { status: 200 })
-
+      return jsonResponse({ success: true, data: targetUser }, { status: 200 })
    } catch (error: unknown) {
       console.error("Erro ao buscar usuário:", error)
-      return NextResponse.json({
-         success: false,
-         message: "Ocorreu um erro ao buscar o usuário.",
-         error: process.env.NODE_ENV === 'development'
-            ? (error instanceof Error ? error.message : "Erro interno desconhecido")
-            : undefined,
-      }, { status: 500 })
+
+      return jsonResponse(
+         { success: false, message: "Ocorreu um erro interno ao buscar o usuário." },
+         { status: 500 }
+      )
    }
 }
 
-export async function PUT(request: Request, { params }: { params: Promise<{ userId: string }> }) {
+export async function PUT(
+   request: Request,
+   { params }: { params: Promise<{ userId: string }> }
+) {
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
-            success: false,
-            message: "Usuário não autenticado.",
-         }, { status: 401 })
+         return jsonResponse(
+            { success: false, message: "Usuário não autenticado." },
+            { status: 401 }
+         )
       }
 
       const { userId } = await params
-      if (!userId) {
-         return NextResponse.json({
-            success: false,
-            message: "ID do usuário é obrigatório.",
-         }, { status: 400 })
+      if (!isValidUserId(userId)) {
+         return jsonResponse(
+            { success: false, message: "ID do usuário inválido." },
+            { status: 400 }
+         )
+      }
+
+      const isAdmin = user.role === "admin"
+      if (user.id !== userId && !isAdmin) {
+         return jsonResponse(
+            { success: false, message: "Você não tem permissão para realizar esta ação." },
+            { status: 403 }
+         )
+      }
+
+      let body: unknown
+      try {
+         body = await request.json()
+      } catch {
+         return jsonResponse(
+            { success: false, message: "A requisição contém dados inválidos." },
+            { status: 400 }
+         )
+      }
+
+      const result = updateUserSchema.safeParse(body)
+      if (!result.success) {
+         return jsonResponse(
+            {
+               success: false,
+               message: "Informações inválidas.",
+               errors: result.error.flatten().fieldErrors,
+            },
+            { status: 422 }
+         )
+      }
+
+      const data = result.data
+      if (!data.role && !data.department_id && !data.name && !data.email) {
+         return jsonResponse(
+            { success: false, message: "Nenhum campo para atualizar foi fornecido." },
+            { status: 400 }
+         )
+      }
+
+      if (!isAdmin && (data.role || data.department_id)) {
+         return jsonResponse(
+            { success: false, message: "Você não tem permissão para alterar papel ou departamento." },
+            { status: 403 }
+         )
       }
 
       const targetUser = await prisma.users.findUnique({
-         where: { id: userId }
+         where: { id: userId },
+         select: { email: true },
       })
 
       if (!targetUser) {
-         return NextResponse.json({
-            success: false,
-            message: "Usuário não encontrado.",
-         }, { status: 404 })
+         return jsonResponse(
+            { success: false, message: "Usuário não encontrado." },
+            { status: 404 }
+         )
       }
 
-      if (user.id !== userId && user.role !== 'admin') {
-         return NextResponse.json({
-            success: false,
-            message: "Você não tem permissão para realizar esta ação.",
-         }, { status: 403 })
-      }
-
-      const body = await request.json()
-      const result = updateUserSchema.safeParse(body)
-
-      if (!result.success) {
-         return NextResponse.json({
-            success: false,
-            message: "Informações inválidas.",
-            errors: result.error.flatten().fieldErrors,
-         }, { status: 422 })
-      }
-
-      const { data } = result
-
-      if (!data.role && !data.department_id && !data.name && !data.email) {
-         return NextResponse.json({
-            success: false,
-            message: "Nenhum campo para atualizar foi fornecido.",
-         }, { status: 400 })
-      }
-
-      if (data.email && data.email !== targetUser.email) {
+      const email = data.email?.trim().toLowerCase()
+      if (email && email !== targetUser.email) {
          const emailExists = await prisma.users.findUnique({
-            where: { email: data.email }
+            where: { email },
+            select: { id: true },
          })
 
          if (emailExists) {
-            return NextResponse.json({
-               success: false,
-               message: "Este e-mail já está em uso.",
-            }, { status: 409 })
+            return jsonResponse(
+               { success: false, message: "Este e-mail já está em uso." },
+               { status: 409 }
+            )
          }
       }
 
       if (data.department_id) {
          const departmentExists = await prisma.departments.findUnique({
-            where: { id: data.department_id }
+            where: { id: data.department_id },
+            select: { id: true },
          })
 
          if (!departmentExists) {
-            return NextResponse.json({
-               success: false,
-               message: "Departamento não encontrado.",
-            }, { status: 404 })
+            return jsonResponse(
+               { success: false, message: "Departamento não encontrado." },
+               { status: 404 }
+            )
          }
       }
 
-      const updateData: Record<string, unknown> = {}
-      if (data.role) updateData.role = data.role
-      if (data.department_id) updateData.department_id = data.department_id
-      if (data.name) updateData.name = data.name
-      if (data.email) updateData.email = data.email
-
       const updatedUser = await prisma.users.update({
          where: { id: userId },
-         data: updateData,
+         data: {
+            ...(data.role ? { role: data.role } : {}),
+            ...(data.department_id ? { department_id: data.department_id } : {}),
+            ...(data.name ? { name: data.name.trim() } : {}),
+            ...(email ? { email } : {}),
+         },
          select: {
             id: true,
             name: true,
@@ -155,57 +190,83 @@ export async function PUT(request: Request, { params }: { params: Promise<{ user
             role: true,
             department_id: true,
             updated_at: true,
-         }
+         },
       })
 
-      return NextResponse.json({
-         success: true,
-         message: "Usuário atualizado com sucesso.",
-         data: updatedUser,
-      }, { status: 200 })
-
+      return jsonResponse(
+         {
+            success: true,
+            message: "Usuário atualizado com sucesso.",
+            data: updatedUser,
+         },
+         { status: 200 }
+      )
    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+         if (error.code === "P2002") {
+            return jsonResponse(
+               { success: false, message: "Este e-mail já está em uso." },
+               { status: 409 }
+            )
+         }
+
+         if (error.code === "P2003") {
+            return jsonResponse(
+               { success: false, message: "Departamento não encontrado." },
+               { status: 404 }
+            )
+         }
+
+         if (error.code === "P2025") {
+            return jsonResponse(
+               { success: false, message: "Usuário não encontrado." },
+               { status: 404 }
+            )
+         }
+      }
+
       console.error("Erro ao atualizar usuário:", error)
-      return NextResponse.json({
-         success: false,
-         message: "Ocorreu um erro ao atualizar o usuário.",
-         error: process.env.NODE_ENV === 'development'
-            ? (error instanceof Error ? error.message : "Erro interno desconhecido")
-            : undefined,
-      }, { status: 500 })
+
+      return jsonResponse(
+         { success: false, message: "Ocorreu um erro interno ao atualizar o usuário." },
+         { status: 500 }
+      )
    }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ userId: string }> }) {
+export async function DELETE(
+   _request: Request,
+   { params }: { params: Promise<{ userId: string }> }
+) {
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
-            success: false,
-            message: "Usuário não autenticado.",
-         }, { status: 401 })
+         return jsonResponse(
+            { success: false, message: "Usuário não autenticado." },
+            { status: 401 }
+         )
       }
 
-      if (user.role !== 'admin') {
-         return NextResponse.json({
-            success: false,
-            message: "Apenas administradores podem excluir usuários.",
-         }, { status: 403 })
+      if (user.role !== "admin") {
+         return jsonResponse(
+            { success: false, message: "Apenas administradores podem excluir usuários." },
+            { status: 403 }
+         )
       }
 
       const { userId } = await params
-      if (!userId) {
-         return NextResponse.json({
-            success: false,
-            message: "ID do usuário é obrigatório.",
-         }, { status: 400 })
+      if (!isValidUserId(userId)) {
+         return jsonResponse(
+            { success: false, message: "ID do usuário inválido." },
+            { status: 400 }
+         )
       }
 
       if (user.id === userId) {
-         return NextResponse.json({
-            success: false,
-            message: "Você não pode excluir sua própria conta.",
-         }, { status: 400 })
+         return jsonResponse(
+            { success: false, message: "Você não pode excluir sua própria conta." },
+            { status: 400 }
+         )
       }
 
       const targetUser = await prisma.users.findUnique({
@@ -216,33 +277,39 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
                select: {
                   tasks_tasks_created_byTousers: true,
                   tasks_tasks_approver_idTousers: true,
-               }
-            }
-         }
+               },
+            },
+         },
       })
 
       if (!targetUser) {
-         return NextResponse.json({
-            success: false,
-            message: "Usuário não encontrado.",
-         }, { status: 404 })
+         return jsonResponse(
+            { success: false, message: "Usuário não encontrado." },
+            { status: 404 }
+         )
       }
 
       const createdTasksCount = targetUser._count.tasks_tasks_created_byTousers
       const approvedTasksCount = targetUser._count.tasks_tasks_approver_idTousers
 
       if (createdTasksCount > 0) {
-         return NextResponse.json({
-            success: false,
-            message: `Não é possível excluir. Este usuário criou ${createdTasksCount} tarefa(s). Reatribua ou exclua as tarefas primeiro.`,
-         }, { status: 409 })
+         return jsonResponse(
+            {
+               success: false,
+               message: `Não é possível excluir. Este usuário criou ${createdTasksCount} tarefa(s). Reatribua ou exclua as tarefas primeiro.`,
+            },
+            { status: 409 }
+         )
       }
 
       if (approvedTasksCount > 0) {
-         return NextResponse.json({
-            success: false,
-            message: `Não é possível excluir. Este usuário aprovou/rejeitou ${approvedTasksCount} tarefa(s).`,
-         }, { status: 409 })
+         return jsonResponse(
+            {
+               success: false,
+               message: `Não é possível excluir. Este usuário aprovou/rejeitou ${approvedTasksCount} tarefa(s).`,
+            },
+            { status: 409 }
+         )
       }
 
       const deletedUser = await prisma.users.delete({
@@ -250,23 +317,30 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
          select: {
             id: true,
             name: true,
-         }
+         },
       })
 
-      return NextResponse.json({
-         success: true,
-         message: "Usuário excluído com sucesso.",
-         data: deletedUser,
-      }, { status: 200 })
-
+      return jsonResponse(
+         {
+            success: true,
+            message: "Usuário excluído com sucesso.",
+            data: deletedUser,
+         },
+         { status: 200 }
+      )
    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+         return jsonResponse(
+            { success: false, message: "Usuário não encontrado." },
+            { status: 404 }
+         )
+      }
+
       console.error("Erro ao excluir usuário:", error)
-      return NextResponse.json({
-         success: false,
-         message: "Ocorreu um erro ao excluir o usuário.",
-         error: process.env.NODE_ENV === 'development'
-            ? (error instanceof Error ? error.message : "Erro desconhecido")
-            : undefined,
-      }, { status: 500 })
+
+      return jsonResponse(
+         { success: false, message: "Ocorreu um erro interno ao excluir o usuário." },
+         { status: 500 }
+      )
    }
 }
