@@ -1,81 +1,150 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import { useToast } from "@/contexts/toast-context"
 import { Sun, Moon, Monitor } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CustomButton, CustomCard, CustomCardContent, CustomInput, CustomSwitch, CustomTabs } from "@/components/ui"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { changePassword, type ChangePassword, type NotificationPreferences } from "@/schemas"
+
+type ApiResponse<T> = {
+   success: boolean
+   data?: T
+   message?: string
+}
 
 export function SettingsPage() {
    const { theme, setTheme } = useTheme()
    const { addToast } = useToast()
-   const [loading, setLoading] = useState(false)
+   const [notifications, setNotifications] = useState<NotificationPreferences | null>(null)
+   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true)
+   const [isSavingNotifications, setIsSavingNotifications] = useState(false)
 
-   const [notifications, setNotifications] = useState({
-      email: true,
-      push: false,
-      taskCreated: true,
-      taskApproved: true,
-      taskRejected: true,
-   });
+   const {
+      register,
+      reset,
+      handleSubmit,
+      formState: { errors, isSubmitting },
+   } = useForm<ChangePassword>({
+      resolver: zodResolver(changePassword),
+      defaultValues: {
+         currentPassword: "",
+         newPassword: "",
+         confirmPassword: "",
+      },
+   })
 
-   const [passwordData, setPasswordData] = useState({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-   });
+   useEffect(() => {
+      let isMounted = true
+
+      const fetchNotificationPreferences = async () => {
+         setIsLoadingNotifications(true)
+
+         try {
+            const response = await fetch("/api/notifications", {
+               cache: "no-store",
+            })
+            const result = await response.json() as ApiResponse<NotificationPreferences>
+
+            if (!response.ok || !result.success || !result.data) {
+               throw new Error(result.message || "Não foi possível carregar as preferências de notificação.")
+            }
+
+            if (isMounted) {
+               setNotifications(result.data)
+            }
+         } catch (error: unknown) {
+            if (!isMounted) return
+
+            addToast({
+               title: "Não foi possível carregar as preferências",
+               message: error instanceof Error ? error.message : "Erro inesperado.",
+               type: "error",
+            })
+         } finally {
+            if (isMounted) {
+               setIsLoadingNotifications(false)
+            }
+         }
+      }
+
+      fetchNotificationPreferences()
+
+      return () => {
+         isMounted = false
+      }
+   }, [addToast])
 
    const handleSaveNotifications = async () => {
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      addToast({
-         title: "Preferências salvas",
-         message: "Suas preferências de notificação foram atualizadas.",
-         type: "success",
-      });
-      setLoading(false);
-   };
+      if (!notifications) return
 
-   const handleChangePassword = async () => {
-      if (
-         !passwordData.currentPassword ||
-         !passwordData.newPassword ||
-         !passwordData.confirmPassword
-      ) {
+      setIsSavingNotifications(true)
+
+      try {
+         const response = await fetch("/api/notifications", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(notifications),
+         })
+         const result = await response.json() as ApiResponse<NotificationPreferences>
+
+         if (!response.ok || !result.success || !result.data) {
+            throw new Error(result.message || "Não foi possível atualizar as preferências de notificação.")
+         }
+
+         setNotifications(result.data)
          addToast({
-            title: "Erro",
-            message: "Preencha todos os campos.",
-            type: "error",
-         });
-         return;
-      }
-
-      if (passwordData.newPassword !== passwordData.confirmPassword) {
+            title: "Preferências salvas",
+            message: "Suas preferências de notificação foram atualizadas.",
+            type: "success",
+         })
+      } catch (error: unknown) {
          addToast({
-            title: "Erro",
-            message: "As senhas não coincidem.",
+            title: "Não foi possível salvar as preferências",
+            message: error instanceof Error ? error.message : "Erro inesperado.",
             type: "error",
-         });
-         return;
+         })
+      } finally {
+         setIsSavingNotifications(false)
       }
+   }
 
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      addToast({
-         title: "Senha alterada",
-         message: "Sua senha foi atualizada com sucesso.",
-         type: "success",
-      });
-      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setLoading(false);
-   };
+   const handleChangePassword = async (data: ChangePassword) => {
+      try {
+         const response = await fetch("/api/users/password", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+         })
+         const result = await response.json() as ApiResponse<undefined>
+
+         if (!response.ok || !result.success) {
+            throw new Error(result.message || "Não foi possível atualizar a senha.")
+         }
+
+         reset()
+         addToast({
+            title: "Senha alterada",
+            message: "Sua senha foi atualizada com sucesso.",
+            type: "success",
+         })
+      } catch (error: unknown) {
+         addToast({
+            title: "Não foi possível alterar a senha",
+            message: error instanceof Error ? error.message : "Erro inesperado.",
+            type: "error",
+         })
+      }
+   }
 
    const themeOptions = [
       { id: "light", label: "Claro", icon: Sun },
       { id: "dark", label: "Escuro", icon: Moon },
       { id: "system", label: "Sistema", icon: Monitor },
-   ];
+   ]
 
    const tabs = [
       {
@@ -90,16 +159,24 @@ export function SettingsPage() {
                   <div className="space-y-4">
                      <CustomSwitch
                         label="Notificações por e-mail"
-                        checked={notifications.email}
+                        checked={notifications?.email_notifications ?? false}
+                        disabled={isLoadingNotifications}
                         onCheckedChange={(checked) =>
-                           setNotifications({ ...notifications, email: checked })
+                           setNotifications((current) => current
+                              ? { ...current, email_notifications: checked }
+                              : current
+                           )
                         }
                      />
                      <CustomSwitch
                         label="Notificações push (navegador)"
-                        checked={notifications.push}
+                        checked={notifications?.push_notifications ?? false}
+                        disabled={isLoadingNotifications}
                         onCheckedChange={(checked) =>
-                           setNotifications({ ...notifications, push: checked })
+                           setNotifications((current) => current
+                              ? { ...current, push_notifications: checked }
+                              : current
+                           )
                         }
                      />
                   </div>
@@ -112,30 +189,46 @@ export function SettingsPage() {
                   <div className="space-y-4">
                      <CustomSwitch
                         label="Quando uma tarefa for criada"
-                        checked={notifications.taskCreated}
+                        checked={notifications?.notify_task_created ?? false}
+                        disabled={isLoadingNotifications}
                         onCheckedChange={(checked) =>
-                           setNotifications({ ...notifications, taskCreated: checked })
+                           setNotifications((current) => current
+                              ? { ...current, notify_task_created: checked }
+                              : current
+                           )
                         }
                      />
                      <CustomSwitch
                         label="Quando uma tarefa for aprovada"
-                        checked={notifications.taskApproved}
+                        checked={notifications?.notify_task_approved ?? false}
+                        disabled={isLoadingNotifications}
                         onCheckedChange={(checked) =>
-                           setNotifications({ ...notifications, taskApproved: checked })
+                           setNotifications((current) => current
+                              ? { ...current, notify_task_approved: checked }
+                              : current
+                           )
                         }
                      />
                      <CustomSwitch
                         label="Quando uma tarefa for rejeitada"
-                        checked={notifications.taskRejected}
+                        checked={notifications?.notify_task_rejected ?? false}
+                        disabled={isLoadingNotifications}
                         onCheckedChange={(checked) =>
-                           setNotifications({ ...notifications, taskRejected: checked })
+                           setNotifications((current) => current
+                              ? { ...current, notify_task_rejected: checked }
+                              : current
+                           )
                         }
                      />
                   </div>
                </div>
 
                <div className="flex justify-end pt-4">
-                  <CustomButton onClick={handleSaveNotifications} loading={loading}>
+                  <CustomButton
+                     onClick={handleSaveNotifications}
+                     loading={isSavingNotifications}
+                     disabled={!notifications || isLoadingNotifications}
+                  >
                      Salvar preferências
                   </CustomButton>
                </div>
@@ -146,44 +239,38 @@ export function SettingsPage() {
          id: "password",
          label: "Alterar Senha",
          content: (
-            <div className="space-y-6 max-w-md">
+            <form className="space-y-6 max-w-md" onSubmit={handleSubmit(handleChangePassword)}>
                <CustomInput
                   label="Senha atual"
                   type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) =>
-                     setPasswordData({ ...passwordData, currentPassword: e.target.value })
-                  }
+                  autoComplete="current-password"
+                  error={errors.currentPassword?.message}
+                  {...register("currentPassword")}
                />
                <CustomInput
                   label="Nova senha"
                   type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  autoComplete="new-password"
+                  error={errors.newPassword?.message}
+                  {...register("newPassword")}
                />
                <CustomInput
                   label="Confirmar nova senha"
                   type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) =>
-                     setPasswordData({ ...passwordData, confirmPassword: e.target.value })
-                  }
+                  autoComplete="new-password"
+                  error={errors.confirmPassword?.message}
+                  {...register("confirmPassword")}
                />
 
                <div className="flex justify-end gap-3 pt-4">
-                  <CustomButton
-                     variant="outline"
-                     onClick={() =>
-                        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-                     }
-                  >
+                  <CustomButton variant="outline" type="button" onClick={() => reset()}>
                      Cancelar
                   </CustomButton>
-                  <CustomButton onClick={handleChangePassword} loading={loading}>
+                  <CustomButton type="submit" loading={isSubmitting}>
                      Alterar senha
                   </CustomButton>
                </div>
-            </div>
+            </form>
          ),
       },
       {
@@ -199,8 +286,9 @@ export function SettingsPage() {
 
                   <div className="grid gap-4 sm:grid-cols-3">
                      {themeOptions.map((option) => {
-                        const Icon = option.icon;
-                        const isActive = theme === option.id;
+                        const Icon = option.icon
+                        const isActive = theme === option.id
+
                         return (
                            <button
                               key={option.id}
@@ -231,14 +319,14 @@ export function SettingsPage() {
                                  {option.label}
                               </span>
                            </button>
-                        );
+                        )
                      })}
                   </div>
                </div>
             </div>
          ),
       },
-   ];
+   ]
 
    return (
       <div className="max-w-3xl mx-auto">
@@ -255,5 +343,5 @@ export function SettingsPage() {
             </CustomCardContent>
          </CustomCard>
       </div>
-   );
+   )
 }

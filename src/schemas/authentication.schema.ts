@@ -46,5 +46,35 @@ export const loginSchema = z.object({
         .min(8, "A senha deve ter pelo menos 8 caracteres"),
 })
 
+
+export const changePassword = z.object({
+    currentPassword: z
+        .string("Digite sua senha.")
+        .min(8, "A senha deve ter pelo menos 8 caracteres")
+        .max(128, "A senha deve ter no máximo 128 caracteres"),
+    newPassword: z
+        .string("Digite sua senha.")
+        .min(8, "A senha deve ter pelo menos 8 caracteres")
+        .max(128, "A senha deve ter no máximo 128 caracteres"),
+    confirmPassword: z
+        .string("Digite sua senha.")
+        .min(8, "A senha deve ter pelo menos 8 caracteres")
+        .max(128, "A senha deve ter no máximo 128 caracteres"),
+}).refine(
+    (data) => data.newPassword === data.confirmPassword,
+    {
+        message: "As senhas não coincidem",
+        path: ["confirmPassword"],
+    }
+).refine(
+    (data) => data.currentPassword !== data.newPassword,
+    {
+        message: "A nova senha deve ser diferente da senha atual",
+        path: ["newPassword"],
+    }
+)
+
+
 export type RegisterSchema = z.infer<typeof registerSchema>
 export type RegisterApiSchema = z.infer<typeof registerApiSchema>
+export type ChangePassword = z.infer<typeof changePassword>

@@ -14,3 +14,7 @@ export type * from "./user.schema"
 // Department
 export * from "./departmentSchema"
 export type * from "./departmentSchema"
+
+// Notifications
+export * from "./notification.schema"
+export type * from "./notification.schema"
