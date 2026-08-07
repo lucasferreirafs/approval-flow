@@ -1,15 +1,8 @@
+import { jsonResponse } from "@/lib/api-response"
 import { hashPassword } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { registerApiSchema } from "@/schemas/authentication.schema"
 import { Prisma } from "../../../generated/prisma/client"
-import { NextResponse } from "next/server"
-
-function jsonResponse<T>(body: T, init: ResponseInit) {
-  const headers = new Headers(init.headers)
-  headers.set("Cache-Control", "no-store")
-
-  return NextResponse.json(body, { ...init, headers })
-}
 
 export async function POST(request: Request) {
   try {

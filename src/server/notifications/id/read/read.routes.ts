@@ -1,15 +1,12 @@
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
-import { NextResponse } from "next/server"
 
-export async function PATCH(
-   request: Request,
-   { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH( _request: Request, { params }: { params: Promise<{ id: string }> } ) {
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Usuário não autenticado.",
          }, { status: 401 })
@@ -17,7 +14,7 @@ export async function PATCH(
 
       const { id } = await params
       if (!id) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "ID da notificação é obrigatório.",
          }, { status: 400 })
@@ -30,7 +27,7 @@ export async function PATCH(
       })
 
       if (!notification) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Notificação não encontrada.",
          }, { status: 404 })
@@ -38,7 +35,7 @@ export async function PATCH(
 
       // Só o dono da notificação pode marcá-la como lida
       if (notification.user_id !== user.id) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Você não tem permissão para alterar esta notificação.",
          }, { status: 403 })
@@ -46,7 +43,7 @@ export async function PATCH(
 
       // Evitar update desnecessário se já estiver lida
       if (notification.read) {
-         return NextResponse.json({
+         return jsonResponse({
             success: true,
             message: "Notificação já estava marcada como lida.",
          }, { status: 200 })
@@ -65,7 +62,7 @@ export async function PATCH(
          }
       })
 
-      return NextResponse.json({
+      return jsonResponse({
          success: true,
          message: "Notificação marcada como lida.",
          data: updatedNotification,
@@ -73,7 +70,7 @@ export async function PATCH(
 
    } catch (error: unknown) {
       console.error("Erro ao marcar notificação como lida:", error)
-      return NextResponse.json({
+      return jsonResponse({
          success: false,
          message: "Ocorreu um erro ao atualizar a notificação.",
          error: process.env.NODE_ENV === 'development'

@@ -1,13 +1,13 @@
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 import { departmentSchema } from "@/schemas"
-import { NextResponse } from "next/server"
 
 export async function GET(request: Request, { params }: { params: Promise<{ departmentId: string }> }) {
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Usuário não autenticado.",
          }, { status: 401 })
@@ -15,7 +15,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ depa
 
       const { departmentId } = await params
       if (!departmentId) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "ID do departamento é obrigatório.",
          }, { status: 400 })
@@ -35,7 +35,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ depa
       })
 
       if (!targetDepartment) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Departamento não encontrado.",
          }, { status: 404 })
@@ -49,14 +49,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ depa
          userCount: targetDepartment._count.users,
       }
 
-      return NextResponse.json({
+      return jsonResponse({
          success: true,
          data: formattedDepartment
       }, { status: 200 })
 
    } catch (error: unknown) {
       console.error("Erro ao buscar departamento:", error)
-      return NextResponse.json({
+      return jsonResponse({
          success: false,
          message: "Ocorreu um erro interno.",
          error: process.env.NODE_ENV === 'development'
@@ -70,14 +70,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ depa
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Usuário não autenticado.",
          }, { status: 401 })
       }
 
       if (user.role !== 'admin') {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Apenas administradores podem editar departamentos.",
          }, { status: 403 })
@@ -85,7 +85,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ depa
 
       const { departmentId } = await params
       if (!departmentId) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "ID do departamento é obrigatório.",
          }, { status: 400 })
@@ -96,7 +96,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ depa
       })
 
       if (!existingDepartment) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Departamento não encontrado.",
          }, { status: 404 })
@@ -106,7 +106,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ depa
       const result = departmentSchema.safeParse(body)
 
       if (!result.success) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Dados inválidos.",
             errors: result.error.flatten().fieldErrors,
@@ -121,7 +121,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ depa
          })
 
          if (nameExists) {
-            return NextResponse.json({
+            return jsonResponse({
                success: false,
                message: "Já existe um departamento com este nome.",
             }, { status: 409 })
@@ -146,7 +146,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ depa
          }
       })
 
-      return NextResponse.json({
+      return jsonResponse({
          success: true,
          message: "Departamento atualizado com sucesso.",
          data: {
@@ -160,7 +160,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ depa
 
    } catch (error: unknown) {
       console.error("Erro ao atualizar departamento:", error)
-      return NextResponse.json({
+      return jsonResponse({
          success: false,
          message: "Ocorreu um erro interno.",
          error: process.env.NODE_ENV === 'development'
@@ -174,14 +174,14 @@ export async function DELETE( request: Request, { params }: { params: Promise<{ 
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Usuário não autenticado.",
          }, { status: 401 })
       }
 
       if (user.role !== 'admin') {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Apenas administradores podem excluir departamentos.",
          }, { status: 403 })
@@ -189,7 +189,7 @@ export async function DELETE( request: Request, { params }: { params: Promise<{ 
 
       const { departmentId } = await params
       if (!departmentId) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "ID do departamento é obrigatório.",
          }, { status: 400 })
@@ -204,21 +204,21 @@ export async function DELETE( request: Request, { params }: { params: Promise<{ 
       })
 
       if (!existingDepartment) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Departamento não encontrado.",
          }, { status: 404 })
       }
 
       if (existingDepartment._count.users > 0) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: `Não é possível excluir. Existem ${existingDepartment._count.users} usuário(s) vinculado(s) a este departamento.`,
          }, { status: 409 })
       }
 
       if (existingDepartment._count.tasks > 0) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: `Não é possível excluir. Existem ${existingDepartment._count.tasks} tarefa(s) vinculada(s) a este departamento.`,
          }, { status: 409 })
@@ -228,14 +228,14 @@ export async function DELETE( request: Request, { params }: { params: Promise<{ 
          where: { id: departmentId }
       })
 
-      return NextResponse.json({
+      return jsonResponse({
          success: true,
          message: "Departamento excluído com sucesso.",
       }, { status: 200 })
 
    } catch (error: unknown) {
       console.error("Erro ao excluir departamento:", error)
-      return NextResponse.json({
+      return jsonResponse({
          success: false,
          message: "Ocorreu um erro interno.",
          error: process.env.NODE_ENV === 'development'

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 
@@ -7,7 +7,7 @@ export async function GET() {
       // Autenticação do usuário
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Usuário não autenticado.",
@@ -43,7 +43,7 @@ export async function GET() {
       })
 
       if (!tasks || tasks.length === 0) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: true,
                message: "Nenhuma tarefa encontrada.",
@@ -53,7 +53,7 @@ export async function GET() {
          )
       }
 
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: true,
             data: tasks,
@@ -62,7 +62,7 @@ export async function GET() {
       )
    } catch (error: unknown) {
       console.error("Erro ao buscar lista de tarefas:", error)
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: false,
             message: "Ocorreu um erro interno ao buscar as tarefas.",

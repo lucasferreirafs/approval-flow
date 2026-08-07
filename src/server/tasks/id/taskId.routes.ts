@@ -1,16 +1,13 @@
-import { NextResponse } from "next/server"
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 
-export async function GET(
-   _request: Request,
-   { params }: { params: Promise<{ taskId: string }> }
-) {
+export async function GET( _request: Request, { params }: { params: Promise<{ taskId: string }> } ) {
    try {
       // Autenticação do usuário
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Usuário não autenticado.",
@@ -22,7 +19,7 @@ export async function GET(
       // Validação do parâmetro de rota
       const { taskId } = await params
       if (!taskId) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "ID da tarefa é obrigatório.",
@@ -52,7 +49,7 @@ export async function GET(
       })
 
       if (!task) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Tarefa não encontrada.",
@@ -66,7 +63,7 @@ export async function GET(
       const isPrivileged = user.role === "admin" || user.role === "aprovador"
 
       if (!isOwner && !isPrivileged) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Você não tem permissão para visualizar esta tarefa.",
@@ -75,7 +72,7 @@ export async function GET(
          )
       }
 
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: true,
             data: task,
@@ -84,7 +81,7 @@ export async function GET(
       )
    } catch (error: unknown) {
       console.error("Erro ao buscar tarefa:", error)
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: false,
             message: "Ocorreu um erro interno ao buscar a tarefa.",

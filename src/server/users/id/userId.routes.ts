@@ -1,26 +1,16 @@
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 import { updateUserSchema } from "@/schemas"
 import { Prisma } from "../../../../generated/prisma/client"
-import { NextResponse } from "next/server"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-function jsonResponse<T>(body: T, init: ResponseInit) {
-   const headers = new Headers(init.headers)
-   headers.set("Cache-Control", "no-store")
-
-   return NextResponse.json(body, { ...init, headers })
-}
 
 function isValidUserId(userId: string | undefined): userId is string {
    return Boolean(userId && UUID_REGEX.test(userId))
 }
 
-export async function GET(
-   _request: Request,
-   { params }: { params: Promise<{ userId: string }> }
-) {
+export async function GET( _request: Request, { params }: { params: Promise<{ userId: string }> } ) {
    try {
       const user = await getCurrentUser()
       if (!user) {
@@ -68,10 +58,7 @@ export async function GET(
    }
 }
 
-export async function PUT(
-   request: Request,
-   { params }: { params: Promise<{ userId: string }> }
-) {
+export async function PUT( request: Request, { params }: { params: Promise<{ userId: string }> } ) {
    try {
       const user = await getCurrentUser()
       if (!user) {

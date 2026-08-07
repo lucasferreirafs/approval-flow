@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 import { formTaskApiSchema } from "@/schemas"
@@ -8,7 +8,7 @@ export async function PUT(request: Request) {
       // Autenticação do usuário
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Usuário não autenticado.",
@@ -22,7 +22,7 @@ export async function PUT(request: Request) {
       const result = formTaskApiSchema.safeParse(body)
 
       if (!result.success) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Informações inválidas.",
@@ -36,7 +36,7 @@ export async function PUT(request: Request) {
 
       // Validação do taskId (obrigatório para atualização)
       if (!data.taskId) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "ID da tarefa é obrigatório.",
@@ -60,7 +60,7 @@ export async function PUT(request: Request) {
       })
 
       if (!existingTask) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Tarefa não encontrada.",
@@ -71,7 +71,7 @@ export async function PUT(request: Request) {
 
       // Apenas o criador da tarefa ou um administrador pode editá-la
       if (existingTask.created_by !== user.id && user.role !== "admin") {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Você não tem permissão para editar esta tarefa.",
@@ -87,7 +87,7 @@ export async function PUT(request: Request) {
       })
 
       if (!departmentExists) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Departamento informado não foi encontrado.",
@@ -187,7 +187,7 @@ export async function PUT(request: Request) {
             return { updatedTask, newHistory, createdNotificationsCount }
          })
 
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: true,
             message: "Tarefa atualizada com sucesso.",
@@ -201,7 +201,7 @@ export async function PUT(request: Request) {
       )
    } catch (error: unknown) {
       console.error("Erro ao atualizar tarefa:", error)
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: false,
             message: "Ocorreu um erro interno ao atualizar a tarefa.",

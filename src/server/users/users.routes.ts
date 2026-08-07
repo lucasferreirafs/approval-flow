@@ -1,13 +1,6 @@
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
-import { NextResponse } from "next/server"
-
-function jsonResponse<T>(body: T, init: ResponseInit) {
-   const headers = new Headers(init.headers)
-   headers.set("Cache-Control", "no-store")
-
-   return NextResponse.json(body, { ...init, headers })
-}
 
 export async function GET() {
    try {

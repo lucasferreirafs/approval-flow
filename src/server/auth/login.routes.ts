@@ -1,18 +1,11 @@
+import { jsonResponse } from "@/lib/api-response"
 import { comparePassword, signJwt } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { loginSchema } from "@/schemas/authentication.schema"
-import { NextResponse } from "next/server"
 
 const AUTH_COOKIE_NAME = "approval_flow_token"
 const SESSION_DURATION_IN_SECONDS = 60 * 60 * 8
 const DUMMY_PASSWORD_HASH = "$2b$12$t.KmqfVms4/Idh7Vx14GmufbNPCKLN6clVMugYW.nzwKycxYQg55S"
-
-function jsonResponse<T>(body: T, init: ResponseInit) {
-  const headers = new Headers(init.headers)
-  headers.set("Cache-Control", "no-store")
-
-  return NextResponse.json(body, { ...init, headers })
-}
 
 export async function POST(request: Request) {
   try {

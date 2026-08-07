@@ -1,6 +1,6 @@
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
-import { NextResponse } from "next/server"
 import { z } from "zod"
 
 // Validação do body
@@ -12,7 +12,7 @@ export async function PATCH(request: Request) {
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Usuário não autenticado.",
          }, { status: 401 })
@@ -22,7 +22,7 @@ export async function PATCH(request: Request) {
       const result = readAllSchema.safeParse(body)
 
       if (!result.success) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Dados inválidos.",
             errors: result.error.flatten().fieldErrors,
@@ -33,7 +33,7 @@ export async function PATCH(request: Request) {
 
       // Só pode marcar como lidas as próprias notificações
       if (user.id !== userId) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Você não tem permissão para alterar notificações de outro usuário.",
          }, { status: 403 })
@@ -47,7 +47,7 @@ export async function PATCH(request: Request) {
          data: { read: true }
       })
 
-      return NextResponse.json({
+      return jsonResponse({
          success: true,
          message: `${result_update.count} notificação(ões) marcada(s) como lida(s).`,
          data: { updatedCount: result_update.count },
@@ -55,7 +55,7 @@ export async function PATCH(request: Request) {
 
    } catch (error: unknown) {
       console.error("Erro ao marcar notificações como lidas:", error)
-      return NextResponse.json({
+      return jsonResponse({
          success: false,
          message: "Ocorreu um erro ao atualizar as notificações.",
          error: process.env.NODE_ENV === 'development'

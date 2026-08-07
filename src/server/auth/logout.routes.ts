@@ -1,13 +1,6 @@
-import { NextResponse } from "next/server"
+import { jsonResponse } from "@/lib/api-response"
 
 const AUTH_COOKIE_NAME = "approval_flow_token"
-
-function jsonResponse<T>(body: T, init: ResponseInit) {
-  const headers = new Headers(init.headers)
-  headers.set("Cache-Control", "no-store")
-
-  return NextResponse.json(body, { ...init, headers })
-}
 
 export async function POST() {
   try {

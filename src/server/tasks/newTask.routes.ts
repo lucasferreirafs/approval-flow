@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { jsonResponse } from "@/lib/api-response"
 import { formTaskApiSchema } from "@/schemas"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-current-user"
@@ -8,7 +8,7 @@ export async function POST(request: Request) {
       // Autenticação do usuário
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Usuário não autenticado.",
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       const result = formTaskApiSchema.safeParse(body)
 
       if (!result.success) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Informações inválidas.",
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       })
 
       if (!departmentExists) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Departamento informado não foi encontrado.",
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
          return { newTask, newHistory, createdNotificationsCount }
       })
 
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: true,
             message: "Tarefa criada com sucesso!",
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
       )
    } catch (error: unknown) {
       console.error("Erro ao criar tarefa:", error)
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: false,
             message: "Ocorreu um erro interno ao criar a tarefa.",

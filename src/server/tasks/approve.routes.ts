@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 import { taskHistorySchema } from "@/schemas"
@@ -8,7 +8,7 @@ export async function POST(request: Request) {
       // Autenticação do usuário
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Usuário não autenticado.",
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
       // Autorização: Apenas aprovadores ou administradores podem aprovar tarefas
       if (user.role !== "admin" && user.role !== "aprovador") {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Você não tem permissão para aprovar tarefas.",
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       const result = taskHistorySchema.safeParse(body)
 
       if (!result.success) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Informações inválidas.",
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       })
 
       if (!existingTask) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Tarefa não encontrada.",
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
          return { updatedTask, newHistory }
       })
 
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: true,
             message: "Tarefa aprovada com sucesso!",
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       )
    } catch (error: unknown) {
       console.error("Erro ao aprovar tarefa:", error)
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: false,
             message: "Ocorreu um erro interno ao aprovar a tarefa.",

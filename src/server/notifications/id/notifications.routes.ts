@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server"
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 
-export async function GET( request: Request, { params }: { params: Promise<{ id: string }> } ) {
+export async function GET( _request: Request, { params }: { params: Promise<{ id: string }> } ) {
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Usuário não autenticado.",
          }, { status: 401 })
@@ -14,7 +14,7 @@ export async function GET( request: Request, { params }: { params: Promise<{ id:
 
       const { id } = await params
       if (!id) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "ID do usuário é obrigatório.",
          }, { status: 400 })
@@ -24,7 +24,7 @@ export async function GET( request: Request, { params }: { params: Promise<{ id:
       const isAdmin = user.role === 'admin'
 
       if (!isOwnAccount && !isAdmin) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Você não tem permissão para ver estas notificações.",
          }, { status: 403 })
@@ -45,14 +45,14 @@ export async function GET( request: Request, { params }: { params: Promise<{ id:
          }
       })
 
-      return NextResponse.json({
+      return jsonResponse({
          success: true,
          data: notifications,
       }, { status: 200 })
 
    } catch (error: unknown) {
       console.error("Erro ao buscar notificações:", error)
-      return NextResponse.json({
+      return jsonResponse({
          success: false,
          message: "Ocorreu um erro ao buscar as notificações.",
          error: process.env.NODE_ENV === 'development'

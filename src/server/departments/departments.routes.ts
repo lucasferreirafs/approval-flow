@@ -1,7 +1,7 @@
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 import { departmentSchema } from "@/schemas"
-import { NextResponse } from "next/server"
 
 export async function GET() {
    try {
@@ -28,7 +28,7 @@ export async function GET() {
          userCount: dept._count.users,
       }))
 
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: true,
             data: formattedDepartments
@@ -37,7 +37,7 @@ export async function GET() {
 
    } catch (error: unknown) {
       console.error("Erro ao listar departamentos:", error)
-      return NextResponse.json({
+      return jsonResponse({
          success: false,
          message: "Ocorreu um erro interno.",
          error: process.env.NODE_ENV === 'development'
@@ -51,14 +51,14 @@ export async function POST(request: Request) {
    try {
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Usuário não autenticado.",
          }, { status: 401 })
       }
 
       if (user.role !== 'admin') {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Apenas administradores podem criar departamentos.",
          }, { status: 403 })
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       const result = departmentSchema.safeParse(body)
 
       if (!result.success) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Dados inválidos.",
             errors: result.error.flatten().fieldErrors,
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       })
 
       if (existingDepartment) {
-         return NextResponse.json({
+         return jsonResponse({
             success: false,
             message: "Já existe um departamento com este nome.",
          }, { status: 409 })
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
          }
       })
 
-      return NextResponse.json({
+      return jsonResponse({
          success: true,
          message: "Departamento criado com sucesso.",
          data: { ...newDepartment, userCount: 0 },
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
 
    } catch (error: unknown) {
       console.error("Erro ao criar departamento:", error)
-      return NextResponse.json({
+      return jsonResponse({
          success: false,
          message: "Ocorreu um erro interno.",
          error: process.env.NODE_ENV === 'development'

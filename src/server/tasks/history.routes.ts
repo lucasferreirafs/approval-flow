@@ -1,16 +1,13 @@
-import { NextResponse } from "next/server"
+import { jsonResponse } from "@/lib/api-response"
 import { getCurrentUser } from "@/lib/get-current-user"
 import prisma from "@/lib/prisma"
 
-export async function GET(
-   _request: Request,
-   { params }: { params: Promise<{ historyId: string }> }
-) {
+export async function GET( _request: Request, { params }: { params: Promise<{ historyId: string }> } ) {
    try {
       // 1. Autenticação do usuário
       const user = await getCurrentUser()
       if (!user) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Usuário não autenticado.",
@@ -22,7 +19,7 @@ export async function GET(
       // 2. Validação do parâmetro de rota (historyId se refere ao taskId no contexto desta rota)
       const { historyId } = await params
       if (!historyId) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "ID da tarefa é obrigatório.",
@@ -38,7 +35,7 @@ export async function GET(
       })
 
       if (!task) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Tarefa referenciada não encontrada.",
@@ -51,7 +48,7 @@ export async function GET(
       const isPrivileged = user.role === "admin" || user.role === "aprovador"
 
       if (!isOwner && !isPrivileged) {
-         return NextResponse.json(
+         return jsonResponse(
             {
                success: false,
                message: "Você não tem permissão para visualizar o histórico desta tarefa.",
@@ -73,7 +70,7 @@ export async function GET(
          },
       })
 
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: true,
             data: taskHistory,
@@ -82,7 +79,7 @@ export async function GET(
       )
    } catch (error: unknown) {
       console.error("Erro ao buscar histórico da tarefa:", error)
-      return NextResponse.json(
+      return jsonResponse(
          {
             success: false,
             message: "Ocorreu um erro interno ao buscar o histórico.",
@@ -93,4 +90,4 @@ export async function GET(
          { status: 500 }
       )
    }
-}
+}
