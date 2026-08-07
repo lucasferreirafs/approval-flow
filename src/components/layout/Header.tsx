@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -22,7 +22,6 @@ interface Notification {
    type: 'info' | 'success' | 'warning' | 'error'
 }
 
-// Cores por tipo de notificação
 const NOTIFICATION_TYPE_STYLES: Record<Notification['type'], string> = {
    info: 'bg-blue-500',
    success: 'bg-success',
@@ -30,7 +29,6 @@ const NOTIFICATION_TYPE_STYLES: Record<Notification['type'], string> = {
    error: 'bg-destructive',
 }
 
-// Formatar tempo relativo (ex: "há 5 min", "há 2h", "há 3 dias")
 function formatRelativeTime(dateString: string): string {
    const date = new Date(dateString)
    const now = new Date()
@@ -43,8 +41,15 @@ function formatRelativeTime(dateString: string): string {
    if (diffMinutes < 60) return `há ${diffMinutes} min`
    if (diffHours < 24) return `há ${diffHours}h`
    if (diffDays < 7) return `há ${diffDays}d`
-
    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+function useIsMounted(): boolean {
+   return useSyncExternalStore(
+      () => () => {},
+      () => true,
+      () => false
+   )
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
@@ -52,6 +57,8 @@ export function Header({ onMenuClick }: HeaderProps) {
    const { user } = useSession()
    const { theme, setTheme } = useTheme()
    const { addToast } = useToast()
+
+   const mounted = useIsMounted()
 
    const [showUserMenu, setShowUserMenu] = useState(false)
    const [showNotifications, setShowNotifications] = useState(false)
@@ -61,10 +68,8 @@ export function Header({ onMenuClick }: HeaderProps) {
    const userMenuRef = useRef<HTMLDivElement>(null)
    const notificationRef = useRef<HTMLDivElement>(null)
 
-   // Contador de não lidas calculado dinamicamente
    const unreadCount = notifications.filter(n => !n.read).length
 
-   // Buscar notificações - função declarada dentro do efeito (evita warning de setState síncrono)
    useEffect(() => {
       const fetchNotifications = async () => {
          try {
@@ -79,9 +84,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
          } catch (error: unknown) {
             console.error("Erro ao buscar notificações:", error)
-            const message = error instanceof Error
-               ? error.message
-               : "Erro desconhecido."
+            const message = error instanceof Error ? error.message : "Erro desconhecido."
             addToast({
                title: "Ops! Ocorreu um erro.",
                message,
@@ -97,7 +100,6 @@ export function Header({ onMenuClick }: HeaderProps) {
       }
    }, [user.id, addToast])
 
-   // Fechar dropdowns ao clicar fora
    useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
          if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -112,9 +114,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       return () => document.removeEventListener('mousedown', handleClickOutside)
    }, [])
 
-   // Marcar notificação como lida
    const markAsRead = useCallback(async (notificationId: string) => {
-      // Atualização otimista
       setNotifications(prev =>
          prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       )
@@ -124,25 +124,20 @@ export function Header({ onMenuClick }: HeaderProps) {
             method: "PATCH",
          })
 
-         if (!res.ok) {
-            throw new Error("Erro ao marcar notificação como lida.")
-         }
+         if (!res.ok) throw new Error("Erro ao marcar notificação como lida.")
 
       } catch (error: unknown) {
          console.error("Erro ao marcar como lida:", error)
-         // Reverter em caso de erro
          setNotifications(prev =>
             prev.map(n => n.id === notificationId ? { ...n, read: false } : n)
          )
       }
    }, [])
 
-   // Marcar todas como lidas
    const markAllAsRead = useCallback(async () => {
       const unreadIds = notifications.filter(n => !n.read).map(n => n.id)
       if (unreadIds.length === 0) return
 
-      // Atualização otimista
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
 
       try {
@@ -152,9 +147,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             body: JSON.stringify({ userId: user.id })
          })
 
-         if (!res.ok) {
-            throw new Error("Erro ao marcar notificações como lidas.")
-         }
+         if (!res.ok) throw new Error("Erro ao marcar notificações como lidas.")
 
          addToast({
             title: "Notificações atualizadas",
@@ -190,7 +183,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       } catch (error: unknown) {
          if (error instanceof Error) {
             addToast({
-               title: "Algo deu errado. Por favor, tente novamente.",
+               title: "Algo deu errado.",
                message: "Não foi possível encerrar a sessão. Por favor, tente novamente.",
                type: "error"
             })
@@ -201,7 +194,6 @@ export function Header({ onMenuClick }: HeaderProps) {
    return (
       <header className="sticky top-0 z-30 h-16 border-b border-border bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/60">
          <div className="flex h-full items-center justify-between px-4 sm:px-6 lg:px-8">
-            {/* Menu button (mobile) */}
             <button
                onClick={onMenuClick}
                className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors"
@@ -209,25 +201,24 @@ export function Header({ onMenuClick }: HeaderProps) {
                <Menu className="h-5 w-5 text-foreground" />
             </button>
 
-            {/* Spacer */}
             <div className="flex-1 md:ml-0" />
 
-            {/* Actions */}
             <div className="flex items-center gap-2">
-               {/* Theme toggle */}
                <button
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                   className="p-2 rounded-lg hover:bg-accent transition-colors"
                   aria-label="Alternar tema"
                >
-                  {theme === 'dark' ? (
+                  {!mounted ? (
+                     <div className="h-5 w-5" />
+                  ) : theme === 'dark' ? (
                      <Sun className="h-5 w-5 text-foreground" />
                   ) : (
                      <Moon className="h-5 w-5 text-foreground" />
                   )}
                </button>
 
-               {/* Notifications */}
+               {/* Notificações */}
                <div className="relative" ref={notificationRef}>
                   <button
                      onClick={() => setShowNotifications(!showNotifications)}
@@ -242,10 +233,8 @@ export function Header({ onMenuClick }: HeaderProps) {
                      )}
                   </button>
 
-                  {/* Dropdown de notificações */}
                   {showNotifications && (
                      <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-border bg-card shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
-                        {/* Header do dropdown */}
                         <div className="flex items-center justify-between p-4 border-b border-border">
                            <div>
                               <h3 className="font-semibold text-foreground">Notificações</h3>
@@ -265,7 +254,6 @@ export function Header({ onMenuClick }: HeaderProps) {
                            )}
                         </div>
 
-                        {/* Lista de notificações */}
                         <div className="max-h-96 overflow-y-auto">
                            {loadingNotifications ? (
                               <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
@@ -285,17 +273,13 @@ export function Header({ onMenuClick }: HeaderProps) {
                                     key={notification.id}
                                     onClick={() => !notification.read && markAsRead(notification.id)}
                                     className={`
-                                                    w-full text-left p-4 border-b border-border last:border-0
-                                                    hover:bg-accent transition-colors cursor-pointer
-                                                    flex gap-3
-                                                    ${!notification.read ? 'bg-primary/5' : ''}
-                                                `}
+                                       w-full text-left p-4 border-b border-border last:border-0
+                                       hover:bg-accent transition-colors cursor-pointer flex gap-3
+                                       ${!notification.read ? 'bg-primary/5' : ''}
+                                    `}
                                  >
-                                    {/* Indicador de tipo/não lida */}
                                     <div className="flex flex-col items-center pt-1 shrink-0">
-                                       <span
-                                          className={`w-2 h-2 rounded-full ${NOTIFICATION_TYPE_STYLES[notification.type]}`}
-                                       />
+                                       <span className={`w-2 h-2 rounded-full ${NOTIFICATION_TYPE_STYLES[notification.type]}`} />
                                     </div>
 
                                     <div className="flex-1 min-w-0">
@@ -335,7 +319,6 @@ export function Header({ onMenuClick }: HeaderProps) {
                      <ChevronDown className="hidden sm:block h-4 w-4 text-muted-foreground" />
                   </button>
 
-                  {/* Dropdown do usuário */}
                   {showUserMenu && (
                      <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="p-3 border-b border-border">
