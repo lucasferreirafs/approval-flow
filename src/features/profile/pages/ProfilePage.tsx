@@ -1,20 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import {
-   CustomCard,
-   CustomCardContent,
-   CustomButton,
-   CustomInput,
-   CustomSelect,
-   CustomSwitch,
-   CustomAvatar,
-} from "@/components/ui"
+import { useState } from "react"
 import { useToast } from "@/contexts/toast-context"
 import { User, Shield, Settings, Camera } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { useSession } from "@/contexts/session-context";
+import { useSession } from "@/contexts/session-context"
+import { CustomCard, CustomCardContent, CustomAvatar, CustomInput, CustomSelect, CustomSwitch, CustomButton } from "@/components/ui";
 
 const menuItems = [
    { id: "profile", label: "Meu Perfil", icon: User },
@@ -28,87 +20,6 @@ export function ProfilePage() {
    const [activeSection, setActiveSection] = useState("profile");
    const [loading, setLoading] = useState(false);
 
-   const [profileData, setProfileData] = useState({
-      name: user.name || "",
-      email: user.email || "",
-      department: user?.department || departments[0].name,
-      cargo: user?.cargo || "",
-      isApprover: user?.isApprover || false,
-      departmentsToApprove: user?.departmentsToApprove || [],
-   });
-
-   const [securityData, setSecurityData] = useState({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-   });
-
-   const departmentOptions = departments.map((d) => ({
-      value: d.name,
-      label: d.name,
-   }));
-
-   const handleSaveProfile = async () => {
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      addToast({
-         title: "Perfil atualizado",
-         message: "Suas informações foram salvas.",
-         type: "success",
-      });
-      setLoading(false);
-   };
-
-   const handleChangePassword = async () => {
-      if (
-         !securityData.currentPassword ||
-         !securityData.newPassword ||
-         !securityData.confirmPassword
-      ) {
-         addToast({
-            title: "Erro",
-            message: "Preencha todos os campos.",
-            type: "error",
-         });
-         return;
-      }
-
-      if (securityData.newPassword !== securityData.confirmPassword) {
-         addToast({
-            title: "Erro",
-            message: "As senhas não coincidem.",
-            type: "error",
-         });
-         return;
-      }
-
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      addToast({
-         title: "Senha alterada",
-         message: "Sua senha foi atualizada com sucesso.",
-         type: "success",
-      });
-      setSecurityData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setLoading(false);
-   };
-
-   const handleAvatarUpload = () => {
-      addToast({
-         title: "Upload simulado",
-         message: "Em produção, o avatar seria atualizado.",
-         type: "info",
-      });
-   };
-
-   const toggleDepartmentApproval = (dept: string) => {
-      setProfileData((prev) => ({
-         ...prev,
-         departmentsToApprove: prev.departmentsToApprove.includes(dept)
-            ? prev.departmentsToApprove.filter((d) => d !== dept)
-            : [...prev.departmentsToApprove, dept],
-      }));
-   };
 
    return (
       <div className="max-w-5xl mx-auto">
@@ -127,17 +38,17 @@ export function ProfilePage() {
                      {/* Avatar */}
                      <div className="flex flex-col items-center pb-4 border-b border-border mb-4">
                         <div className="relative">
-                           <CustomAvatar name={profileData.name} size="xl" />
+                           <CustomAvatar name={"Lucas Ferreira"} size="xl" />
                            <button
-                              onClick={handleAvatarUpload}
+                              
                               className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                               title="Alterar avatar"
                            >
                               <Camera className="h-4 w-4" />
                            </button>
                         </div>
-                        <h3 className="mt-3 font-medium text-foreground">{profileData.name}</h3>
-                        <p className="text-sm text-muted-foreground">{profileData.email}</p>
+                        <h3 className="mt-3 font-medium text-foreground">Lucas Ferreira</h3>
+                        <p className="text-sm text-muted-foreground">lucas.ferreira@example.com</p>
                      </div>
 
                      {/* Menu */}
