@@ -10,24 +10,31 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker)
 
+<br />
+
+<div align="center">
+  <img src="docs/screenshots/dashboard.png" alt="ApprovalFlow - Dashboard Principal" width="100%" />
+</div>
+
 ---
 
 ## 📌 Sumário
 
 1. [Sobre o Projeto](#-sobre-o-projeto)
-2. [Problema que o Sistema Resolve](#-problema-que-o-sistema-resolve)
-3. [Perfis de Acesso (RBAC)](#-perfis-de-acesso-rbac)
-4. [Principais Funcionalidades](#-principais-funcionalidades)
-5. [Arquitetura e Estrutura de Diretórios](#-arquitetura-e-estrutura-de-diretórios)
-6. [Fluxo de Aprovação](#-fluxo-de-aprovação)
-7. [Modelo de Dados (Diagrama E-R)](#-modelo-de-dados-diagrama-e-r)
-8. [Stack Tecnológica](#-stack-tecnológica)
-9. [Pré-requisitos](#-pré-requisitos)
-10. [Guia de Instalação e Execução](#-guia-de-instalação-e-execução)
-11. [Variáveis de Ambiente](#-variáveis-de-ambiente)
-12. [Rotas e Endpoints da API](#-rotas-e-endpoints-da-api)
-13. [Scripts Disponíveis](#-scripts-disponíveis)
-14. [Padrões de Desenvolvimento](#-padrões-de-desenvolvimento)
+2. [Demonstração Visual](#-demonstração-visual)
+3. [Problema que o Sistema Resolve](#-problema-que-o-sistema-resolve)
+4. [Perfis de Acesso (RBAC)](#-perfis-de-acesso-rbac)
+5. [Principais Funcionalidades](#-principais-funcionalidades)
+6. [Arquitetura e Estrutura de Diretórios](#-arquitetura-e-estrutura-de-diretórios)
+7. [Fluxo de Aprovação](#-fluxo-de-aprovação)
+8. [Modelo de Dados (Diagrama E-R)](#-modelo-de-dados-diagrama-e-r)
+9. [Stack Tecnológica](#-stack-tecnológica)
+10. [Pré-requisitos](#-pré-requisitos)
+11. [Guia de Instalação e Execução](#-guia-de-instalação-e-execução)
+12. [Variáveis de Ambiente](#-variáveis-de-ambiente)
+13. [Rotas e Endpoints da API](#-rotas-e-endpoints-da-api)
+14. [Scripts Disponíveis](#-scripts-disponíveis)
+15. [Padrões de Desenvolvimento](#-padrões-de-desenvolvimento)
 
 ---
 
@@ -36,6 +43,26 @@
 O **ApprovalFlow** é uma plataforma corporativa completa desenvolvida para padronizar, gerenciar e auditar o ciclo de vida de solicitações internas (como demandas de compras, contratações, permissões de TI, suporte operacional e reembolsos).
 
 O sistema implementa uma camada rigorosa de **Controle de Acesso Baseado em Funções (RBAC)**, separando responsabilidades entre quem solicita, quem aprova e quem administra a infraestrutura organizacional, garantindo transparência por meio de um histórico auditável imutável (*audit trail*).
+
+---
+
+## 📸 Demonstração Visual
+
+### 📊 Dashboard Analítico (Visão do Administrador)
+*Métricas da organização em tempo real, indicadores operacionais (KPIs), taxa de aprovação e gráfico analítico de distribuição de tarefas por status.*
+![Dashboard Analítico](docs/screenshots/dashboard.png)
+
+<br />
+
+### ✍️ Central de Aprovações (Fila Departamental)
+*Fila com as solicitações pendentes de avaliação para os setores sob responsabilidade do usuário, com ações rápidas para Aprovar ou Rejeitar (com justificativa).*
+![Fila de Aprovações](docs/screenshots/approvals.png)
+
+<br />
+
+### 🔐 Autenticação e Segurança
+*Interface de acesso corporativo com suporte a temas Claro e Escuro, validação de credenciais e proteção via cookies httpOnly.*
+![Tela de Login](docs/screenshots/preview.png)
 
 ---
 
@@ -331,12 +358,12 @@ Abra seu navegador e acesse: [http://localhost:3000](http://localhost:3000) (voc
 
 Após executar o comando `npx prisma db seed`, os seguintes usuários padrão estarão disponíveis no banco:
 
-| Nome | E-mail | Perfil | Setor | Escopo de Aprovação |
-| :--- | :--- | :--- | :--- | :--- |
-| **Carlos Administrador** | `admin@empresa.com` | `admin` | Tecnologia da Informação | TI, RH e Financeiro |
-| **Ana Silva** | `ana.rh@empresa.com` | `aprovador` | Recursos Humanos | Recursos Humanos |
-| **Bruno Costa** | `bruno.ti@empresa.com` | `colaborador` | Tecnologia da Informação | — |
-| **Diana Martins** | `diana.fin@empresa.com` | `colaborador` | Financeiro | — |
+| Nome | E-mail | Senha Padrão | Perfil | Setor | Escopo de Aprovação |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Carlos Administrador** | `admin@empresa.com` | `admin123` | `admin` | Tecnologia da Informação | TI, RH e Financeiro |
+| **Ana Silva** | `ana.rh@empresa.com` | `admin123` | `aprovador` | Recursos Humanos | Recursos Humanos |
+| **Bruno Costa** | `bruno.ti@empresa.com` | `admin123` | `colaborador` | Tecnologia da Informação | — |
+| **Diana Martins** | `diana.fin@empresa.com` | `admin123` | `colaborador` | Financeiro | — |
 
 > 💡 **Dica de Acesso:** Você também pode utilizar a página de registro (`/register`) para criar uma nova conta de colaborador imediatamente.
 
