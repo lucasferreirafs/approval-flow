@@ -281,7 +281,7 @@ Antes de iniciar, certifique-se de possuir instalado em sua máquina:
 
 ### 1. Clonar o Repositório
 ```bash
-git clone https://github.com/seu-usuario/approval-flow.git
+git clone https://github.com/lucasferreirafs/approval-flow.git
 cd approval-flow
 ```
 
